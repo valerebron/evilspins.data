@@ -5,8 +5,8 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
-    "db": "docker compose -f dev-compose.yml up -d",
-    "db:down": "docker compose -f dev-compose.yml down",
+    "db": "docker compose -f dev-database.yml up -d",
+    "db:down": "docker compose -f dev-database.yml down",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/src/index.js",
     "scan": "ts-node src/scanner/index.ts"

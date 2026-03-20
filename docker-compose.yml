@@ -15,7 +15,7 @@ services:
     depends_on:
       - evilspins-db
     volumes:
-      - ./cards:/app/cards
+      - /var/evilspins.media/:/var/evilspins.media/
 
   evilspins-db:
     image: postgres:15-alpine
