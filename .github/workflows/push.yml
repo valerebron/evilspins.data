@@ -19,9 +19,7 @@ jobs:
             set -a && source .env && set +a
             bash /var/docker-web/src/cli.sh down "${APP_NAME}"
             mkdir -p "$APP_DIR"
-            rm -rf "$APP_DIR"
             cp -a $(find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'node_modules' ! -name 'cards') "$APP_DIR/"
-            mkdir -p "$APP_DIR"
             export COMPOSE_BAKE=false
             docker rmi "local/${APP_NAME}" 2>/dev/null || true
             bash /var/docker-web/src/cli.sh build "${APP_NAME}"
