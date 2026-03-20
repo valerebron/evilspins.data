@@ -10,7 +10,7 @@ import { initializeDatabase } from './db/init'
 import { startWatcher } from './watcher'
 
 const app  = express()
-const PORT = process.env.PORT ?? 3002
+const PORT = process.env.PORT
 
 const CARDS_DIR = process.env.CARDS_DIR
   ?? path.resolve(__dirname, '../../cards/normal')

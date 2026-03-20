@@ -11,7 +11,7 @@ services:
       CARDS_DIR: "${CARDS_DIR}"
       DATABASE_URL: "${DATABASE_URL}"
     ports:
-      - "${PORT}:3000"
+      - "${PORT}:${PORT}"
     depends_on:
       - evilspins-db
     volumes:
