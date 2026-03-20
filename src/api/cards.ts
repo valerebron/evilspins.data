@@ -11,6 +11,19 @@ import { scanCards } from '../scanner'
 
 const router = Router()
 
+// ─── GET /api/random ─────────────────────────────────────────────────────────────
+// Returns a random card.
+router.get('/random', async (_req: Request, res: Response) => {
+  try {
+    const cards = await getAllCards()
+    const randomCard = cards[Math.floor(Math.random() * cards.length)]
+    res.json(randomCard)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
 // ─── GET /api/cards ─────────────────────────────────────────────────────────────
 // Returns all cards, ordered by date added.
 router.get('/', async (_req: Request, res: Response) => {
