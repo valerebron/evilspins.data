@@ -18,6 +18,7 @@ jobs:
           if [ -n "$APP_NAME" ]; then
             set -a && source .env && set +a
             bash /var/docker-web/src/cli.sh down "${APP_NAME}"
+            mkdir -p "$APP_DIR"
             rm -rf "$APP_DIR"
             cp -a $(find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'node_modules' ! -name 'cards') "$APP_DIR/"
             mkdir -p "$APP_DIR"
