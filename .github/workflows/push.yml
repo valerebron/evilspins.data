@@ -18,14 +18,8 @@ jobs:
           if [ -n "$APP_NAME" ]; then
             set -a && source .env && set +a
             bash /var/docker-web/src/cli.sh down "${APP_NAME}"
-            rm -rf "$APP_DIR"
-            mkdir "$APP_DIR"
             cp -a $(find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'node_modules' ! -name 'cards') "$APP_DIR/"
             mkdir -p "$APP_DIR/cards"
-            # Si les cards existent dans la source, les copier sinon créer un dossier vide
-            if [ -d "cards" ]; then
-              cp -a cards/* "$APP_DIR/cards/"
-            fi
             export COMPOSE_BAKE=false
             docker rmi "local/${APP_NAME}" 2>/dev/null || true
             bash /var/docker-web/src/cli.sh build "${APP_NAME}"
