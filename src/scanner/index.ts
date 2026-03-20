@@ -128,8 +128,8 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
     }
 
     // Build paths relative to CARD_DIR so the frontend can resolve them
-    const relativePath = (entry: FileEntry) =>
-      path.relative(CARD_DIR, entry.full)
+    const fullPath = (entry: FileEntry) =>
+      `${process.env.DOMAIN}/files/cards${entry.full.slice(CARD_DIR.length)}`
 
     await upsertCard({
       esid,
@@ -143,8 +143,8 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
       slug,
       suit,
       rank,
-      url_audio: relativePath(audio),
-      url_image: image ? relativePath(image) : '',
+      url_audio: fullPath(audio),
+      url_image: image ? fullPath(image) : '',
       blurhash,
       file_mtime: audio.mtime,
       created_at: date,
