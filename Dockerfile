@@ -13,7 +13,7 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .env ./
 
 # Install pnpm and all dependencies (including devDependencies for build)
 RUN npm install -g pnpm
