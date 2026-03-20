@@ -1,0 +1,50 @@
+name: Deploy
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container:
+      volumes:
+        - /var/docker-web:/var/docker-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        env:
+          CI_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        run: |
+          bash ./.github/workflows/setup-env.sh
+          set -a && source .env && set +a
+          if [ -n "$APP_NAME" ]; then
+            set -a && source .env && set +a
+            bash /var/docker-web/src/cli.sh down "${APP_NAME}"
+            rm -rf "$APP_DIR"
+            mkdir "$APP_DIR"
+            cp -a $(find . -mindepth 1 -maxdepth 1 ! -name '.git' ! -name 'node_modules' ! -name 'cards') "$APP_DIR/"
+            mkdir -p "$APP_DIR/cards"
+            # Si les cards existent dans la source, les copier sinon créer un dossier vide
+            if [ -d "cards" ]; then
+              cp -a cards/* "$APP_DIR/cards/"
+            fi
+            export COMPOSE_BAKE=false
+            docker rmi "local/${APP_NAME}" 2>/dev/null || true
+            bash /var/docker-web/src/cli.sh build "${APP_NAME}"
+          fi
+
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: build
+    container:
+      volumes:
+        - /var/docker-web:/var/docker-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        env:
+          CI_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        run: |
+          bash ./.github/workflows/setup-env.sh
+          set -a && source .env && set +a
+          if [ -n "$APP_NAME" ]; then
+            bash /var/docker-web/src/cli.sh up "${APP_NAME}"
+          fi
