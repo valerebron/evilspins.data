@@ -9,7 +9,7 @@ import fs from 'fs'
 import path from 'path'
 import { scanCards } from '../scanner'
 
-const CARDS_DIR   = process.env.CARDS_DIR ?? path.resolve(__dirname, '../../../cards/normal')
+const CARDS_DIR   = process.env.CARDS_DIR ?? path.resolve(__dirname, '/var/evilspins.media/cards')
 const DEBOUNCE_MS   = 2_000   // wait 2 s after last event before scanning
 
 let debounceTimer: NodeJS.Timeout | null = null

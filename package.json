@@ -1,7 +1,7 @@
 {
-  "name": "evilspins-backend",
+  "name": "evilspins-data",
   "version": "1.0.0",
-  "description": "Backend API for EvilSpins music card app",
+  "description": "data API for EvilSpins music card app",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",

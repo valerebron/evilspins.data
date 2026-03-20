@@ -13,7 +13,7 @@ const app  = express()
 const PORT = process.env.PORT
 
 const CARDS_DIR = process.env.CARDS_DIR
-  ?? path.resolve(__dirname, '../../cards/normal')
+  ?? path.resolve(__dirname, '/var/evilspins.media/cards')
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors())

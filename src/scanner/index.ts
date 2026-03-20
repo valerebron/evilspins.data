@@ -26,7 +26,7 @@ import {
   getCardByStem,
 } from '../db/cards'
 
-const CARD_DIR = process.env.CARDS_DIR ?? path.resolve(__dirname, '../../cards/normal')
+const CARD_DIR = process.env.CARDS_DIR ?? path.resolve(__dirname, '/var/evilspins.media/cards')
 
 interface FileEntry {
   stem: string
