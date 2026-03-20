@@ -1,5 +1,5 @@
 {
-  "name": "evilspins-data",
+  "name": "evilspins.data",
   "version": "1.0.0",
   "description": "data API for EvilSpins music card app",
   "main": "dist/src/index.js",
