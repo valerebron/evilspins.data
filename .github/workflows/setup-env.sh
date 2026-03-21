@@ -24,6 +24,7 @@ if [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
   APP_NAME="${BRANCH_NAME}_${APP_NAME}"
   PORT=$(bash /var/docker-web/src/cli.sh ALLOCATE_PORT)
   sed -i "s|${GITHUB_REPOSITORY##*/}|$APP_NAME|g" docker-compose.yml
+  sed -i '/depends_on:/,/evilspins-db/d; /evilspins-db:/,/postgres_data:/d; /^volumes:$/,/^$/d' docker-compose.yml
 fi
 
 APP_DIR="/var/docker-web/apps/$APP_NAME"
