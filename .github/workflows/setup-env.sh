@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -a && source .env && set +a
 
 changeEnvVar() {
@@ -14,24 +13,23 @@ changeEnvVar() {
   fi
 }
 
+
 # Variables GitHub
-APP_NAME="${GITHUB_REPOSITORY##*/}"
+APP_NAME_MAIN="${GITHUB_REPOSITORY##*/}"
 BRANCH_NAME=$GITHUB_REF_NAME
 
 # Configuration pour les branches non-principales
 if [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "master" ]; then
-  DOMAIN="$BRANCH_NAME.$DOMAIN"
-  APP_NAME="${BRANCH_NAME}_${APP_NAME}"
+  DOMAIN_BRANCH="$BRANCH_NAME.$DOMAIN"
+  APP_NAME_BRANCH="${APP_NAME_MAIN}.${BRANCH_NAME}"
   PORT=$(bash /var/docker-web/src/cli.sh ALLOCATE_PORT)
-  sed -i "s|${GITHUB_REPOSITORY##*/}|$APP_NAME|g" docker-compose.yml
-  sed -i '/depends_on:/,/evilspins-db/d; /evilspins-db:/,/postgres_data:/d; /^volumes:$/,/^$/d' docker-compose.yml
+  sed -i "s|${APP_NAME_MAIN}|$APP_NAME_BRANCH|g" docker-compose.yml
+
+  changeEnvVar "DOMAIN" $DOMAIN_BRANCH
+  changeEnvVar "PORT" $PORT
+  changeEnvVar "APP_NAME" $APP_NAME_BRANCH
+  changeEnvVar "APP_DIR" "/var/docker-web/apps/$APP_NAME_BRANCH"
+else
+  changeEnvVar "APP_NAME" $APP_NAME_MAIN
+  changeEnvVar "APP_DIR" "/var/docker-web/apps/$APP_NAME_MAIN"
 fi
-
-APP_DIR="/var/docker-web/apps/$APP_NAME"
-
-changeEnvVar "DATABASE_PASSWORD" $CI_PASSWORD
-changeEnvVar "DATABASE_URL" "postgresql://evilspins:${CI_PASSWORD}@evilspins-db/evilspins"
-changeEnvVar "DOMAIN" $DOMAIN
-changeEnvVar "APP_NAME" $APP_NAME
-changeEnvVar "PORT" $PORT
-changeEnvVar "APP_DIR" $APP_DIR
