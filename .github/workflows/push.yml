@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build
         env:
-          CI_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
         run: |
           bash ./.github/workflows/setup-env.sh
           set -a && source .env && set +a
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Deploy
         env:
-          CI_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
         run: |
           bash ./.github/workflows/setup-env.sh
           set -a && source .env && set +a

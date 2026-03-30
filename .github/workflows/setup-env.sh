@@ -34,5 +34,5 @@ else
   changeEnvVar "APP_DIR" "/var/docker-web/apps/$APP_NAME_MAIN"
 fi
 
-changeEnvVar "DATABASE_PASSWORD" $CI_PASSWORD
-  changeEnvVar "DATABASE_URL" "postgresql://evilspins:$CI_PASSWORD@evilspins-db:5432/evilspins"
+changeEnvVar "DATABASE_PASSWORD" $DATABASE_PASSWORD
+changeEnvVar "DATABASE_URL" "postgresql://evilspins:$DATABASE_PASSWORD@evilspins-db:5432/evilspins"
