@@ -2,7 +2,7 @@ services:
   evilspins-data:
     build: .
     image: evilspins-data
-    container_name: evilspins-data
+    container_name: evilspins.data
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -19,7 +19,7 @@ services:
 
   evilspins-db:
     image: postgres:15-alpine
-    container_name: evilspins-db
+    container_name: evilspins.db
     restart: unless-stopped
     environment:
       POSTGRES_USER: "evilspins"
