@@ -35,4 +35,4 @@ else
 fi
 
 changeEnvVar "DATABASE_PASSWORD" $CI_PASSWORD
-changeEnvVar "DATABASE_URL" "postgresql://postgres:$CI_PASSWORD@db:7901/postgres"
+  changeEnvVar "DATABASE_URL" "postgresql://evilspins:$CI_PASSWORD@evilspins-db:5432/evilspins"
