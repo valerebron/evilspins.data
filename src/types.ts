@@ -21,6 +21,7 @@ export interface Card {
   url_image: string
   blurhash?: string
   file_mtime: number
+  file_size: number
   created_at: Date
   updated_at: Date
 }

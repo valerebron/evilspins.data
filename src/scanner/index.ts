@@ -33,6 +33,7 @@ interface FileEntry {
   ext:  string
   full: string
   mtime: number
+  size: number
 }
 
 /**
@@ -51,7 +52,7 @@ function groupByEsid(dir: string): Map<string, { audio?: FileEntry; image?: File
     const parsed = path.parse(filename)
     const stem   = parsed.name
     const ext    = parsed.ext.toLowerCase()
-    const entry: FileEntry = { stem, ext, full, mtime: Math.floor(stat.mtimeMs) }
+    const entry: FileEntry = { stem, ext, full, mtime: Math.floor(stat.mtimeMs), size: stat.size }
 
     if (!groups.has(stem)) groups.set(stem, {})
     const group = groups.get(stem)!
@@ -147,6 +148,7 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
       url_image: image ? fullPath(image) : '',
       blurhash,
       file_mtime: audio.mtime,
+      file_size: audio.size,
       created_at: date,
     })
 

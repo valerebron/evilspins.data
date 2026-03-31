@@ -99,14 +99,15 @@ export interface UpsertCardInput {
   url_image: string
   blurhash?: string
   file_mtime: number
+  file_size: number
   created_at: Date
 }
 
 export async function upsertCard(card: UpsertCardInput): Promise<void> {
   await pool.query(
     `INSERT INTO cards
-       (esid, stem, year, month, day, hour, artist, title, slug, suit, rank, url_audio, url_image, blurhash, file_mtime, created_at, updated_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16, now())
+       (esid, stem, year, month, day, hour, artist, title, slug, suit, rank, url_audio, url_image, blurhash, file_mtime, file_size, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, now())
      ON CONFLICT (esid) DO UPDATE SET
        stem      = EXCLUDED.stem,
        artist    = EXCLUDED.artist,
@@ -118,6 +119,7 @@ export async function upsertCard(card: UpsertCardInput): Promise<void> {
        url_image = EXCLUDED.url_image,
        blurhash  = EXCLUDED.blurhash,
        file_mtime = EXCLUDED.file_mtime,
+       file_size = EXCLUDED.file_size,
        updated_at = now()`,
     [
       card.esid,
@@ -135,6 +137,7 @@ export async function upsertCard(card: UpsertCardInput): Promise<void> {
       card.url_image,
       card.blurhash,
       card.file_mtime,
+      card.file_size,
       card.created_at,
     ],
   )

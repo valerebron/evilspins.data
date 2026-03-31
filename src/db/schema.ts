@@ -24,6 +24,7 @@ export const SCHEMA_SQL = `
     blurhash    TEXT,                   -- Blurhash of the image for placeholder
     -- Watcher metadata: used to detect changes without full re-scan
     file_mtime  BIGINT NOT NULL,        -- mtime of the audio file in ms
+    file_size   BIGINT NOT NULL,        -- audio file size in bytes
     created_at  TIMESTAMPTZ NOT NULL,
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
