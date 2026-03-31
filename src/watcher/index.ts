@@ -30,16 +30,16 @@ function scheduleRescan(eventType: string, filename: string | null) {
 }
 
 export function startWatcher(): fs.FSWatcher {
-  if (!fs.existsSync(MEDIA_DIR)) {
-    throw new Error(`Cards directory does not exist: ${MEDIA_DIR}`)
+  if (!fs.existsSync(CARDS_DIR)) {
+    throw new Error(`Cards directory does not exist: ${CARDS_DIR}`)
   }
 
-  const watcher = fs.watch(MEDIA_DIR, { persistent: true }, scheduleRescan)
+  const watcher = fs.watch(CARDS_DIR, { persistent: true }, scheduleRescan)
 
   watcher.on('error', (err) => {
     console.error('Watcher error:', err)
   })
 
-  console.log(`👁️   Watching ${MEDIA_DIR}`)
+  console.log(`👁️   Watching ${CARDS_DIR}`)
   return watcher
 }

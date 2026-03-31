@@ -1,13 +1,7 @@
 import { pool } from './pool'
 
 export const SCHEMA_SQL = `
-  DROP TABLE IF EXISTS tarots CASCADE;
-  DROP TABLE IF EXISTS sides CASCADE;
-  DROP TABLE IF EXISTS artists CASCADE;
-  DROP TABLE IF EXISTS tapes CASCADE;
-  DROP TABLE IF EXISTS cards CASCADE;
-
-  CREATE TABLE cards (
+  CREATE TABLE IF NOT EXISTS cards (
     id          SERIAL PRIMARY KEY,
     -- Parsed from filename: YYYYMMDDHH__artist__title.ext
     esid        TEXT NOT NULL UNIQUE,   -- MD5 hash of date+artist+title
@@ -33,14 +27,14 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE tapes (
+  CREATE TABLE IF NOT EXISTS tapes (
     id          TEXT PRIMARY KEY,
     duration    INTEGER NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE artists (
+  CREATE TABLE IF NOT EXISTS artists (
     id          INTEGER PRIMARY KEY,
     name        TEXT NOT NULL,
     url         TEXT,
@@ -50,7 +44,7 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE sides (
+  CREATE TABLE IF NOT EXISTS sides (
     id          SERIAL PRIMARY KEY,
     tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
     side        CHAR(1) NOT NULL,
@@ -60,7 +54,7 @@ export const SCHEMA_SQL = `
     UNIQUE(tape_id, side)
   );
 
-  CREATE TABLE tarots (
+  CREATE TABLE IF NOT EXISTS tarots (
     id          SERIAL PRIMARY KEY,
     esid        TEXT NOT NULL UNIQUE,
     tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
@@ -79,13 +73,13 @@ export const SCHEMA_SQL = `
   );
 
   -- Indexes for performance
-  CREATE INDEX cards_date ON cards (year, month, day, hour);
-  CREATE INDEX cards_suit_rank ON cards (suit, rank);
-  CREATE INDEX cards_slug ON cards (slug);
-  CREATE INDEX cards_stem ON cards (stem);
-  CREATE INDEX cards_esid ON cards (esid);
-  CREATE INDEX tarots_tape_side_order ON tarots (tape_id, side, track_order);
-  CREATE INDEX tarots_artist_id ON tarots (artist_id);
+  CREATE INDEX IF NOT EXISTS cards_date ON cards (year, month, day, hour);
+  CREATE INDEX IF NOT EXISTS cards_suit_rank ON cards (suit, rank);
+  CREATE INDEX IF NOT EXISTS cards_slug ON cards (slug);
+  CREATE INDEX IF NOT EXISTS cards_stem ON cards (stem);
+  CREATE INDEX IF NOT EXISTS cards_esid ON cards (esid);
+  CREATE INDEX IF NOT EXISTS tarots_tape_side_order ON tarots (tape_id, side, track_order);
+  CREATE INDEX IF NOT EXISTS tarots_artist_id ON tarots (artist_id);
 `
 
 export async function createSchema() {
