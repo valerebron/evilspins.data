@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express'
 import {
   getAllTarots,
+  getAllTapes,
+  getRandomTarot,
   getTarotById,
   getTarotByEsid,
   getTarotsByTapeSide,
@@ -8,6 +10,17 @@ import {
 } from '../db/tarot'
 
 const router = Router()
+
+// ─── GET /api/tarots/tapes ───────────────────────────────────────────────────────
+router.get('/tapes', async (_req: Request, res: Response) => {
+  try {
+    const tapes = await getAllTapes()
+    res.json(tapes)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
 
 // ─── GET /api/tarots ─────────────────────────────────────────────────────────────
 router.get('/', async (_req: Request, res: Response) => {
@@ -58,6 +71,21 @@ router.get('/esid/:esid', async (req: Request, res: Response) => {
     const tarot = await getTarotByEsid(req.params.esid)
     if (!tarot) {
       res.status(404).json({ error: 'Not found' })
+      return
+    }
+    res.json(tarot)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// ─── GET /api/tarots/random ───────────────────────────────────────────────────
+router.get('/random', async (_req: Request, res: Response) => {
+  try {
+    const tarot = await getRandomTarot()
+    if (!tarot) {
+      res.status(404).json({ error: 'No tarot found' })
       return
     }
     res.json(tarot)

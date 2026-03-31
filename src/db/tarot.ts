@@ -135,6 +135,18 @@ export async function getAllTarots(): Promise<Tarot[]> {
   return rows
 }
 
+export async function getAllTapes(): Promise<{ id: string; duration: number; created_at: Date; updated_at: Date }[]> {
+  const { rows } = await pool.query<{ id: string; duration: number; created_at: Date; updated_at: Date }>(
+    `SELECT id, duration, created_at, updated_at FROM tapes ORDER BY id`,
+  )
+  return rows
+}
+
+export async function getRandomTarot(): Promise<Tarot | null> {
+  const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots ORDER BY RANDOM() LIMIT 1`)
+  return rows[0] ?? null
+}
+
 export async function getTarotById(id: number): Promise<Tarot | null> {
   const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots WHERE id = $1`, [id])
   return rows[0] ?? null
