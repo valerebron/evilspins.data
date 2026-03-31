@@ -6,14 +6,16 @@ import path from 'path'
 dotenv.config()
 
 import cardsRouter from './api/cards'
+import tarotsRouter from './api/tarots'
 import { initializeDatabase } from './db/init'
 import { startWatcher } from './watcher'
 
 const app  = express()
 const PORT = process.env.PORT
 
-const CARDS_DIR = process.env.CARDS_DIR
-  ?? path.resolve(__dirname, '/var/evilspins.media/cards')
+const MEDIA_DIR = process.env.MEDIA_DIR
+  ?? path.resolve(__dirname, '/var/evilspins.media')
+const CARDS_DIR = path.join(MEDIA_DIR, 'cards')
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors())
@@ -21,9 +23,11 @@ app.use(express.json())
 
 // Serve audio and image files directly
 app.use('/files/cards', express.static(CARDS_DIR))
+app.use('/files/tarots', express.static(path.join(MEDIA_DIR, 'tarot')))
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/cards', cardsRouter)
+app.use('/api/tarots', tarotsRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() })

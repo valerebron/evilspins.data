@@ -1,7 +1,7 @@
 /**
  * Card scanner
  *
- * Scans CARDS_DIR, parses filenames, computes playing-card values,
+ * Scans the media cards directory, parses filenames, computes playing-card values,
  * then upserts into Postgres.  Only rows whose mtime has changed are updated.
  *
  * Can be run standalone:  ts-node src/scanner/index.ts
@@ -26,7 +26,8 @@ import {
   getCardByStem,
 } from '../db/cards'
 
-const CARD_DIR = process.env.CARDS_DIR ?? path.resolve(__dirname, '/var/evilspins.media/cards')
+const MEDIA_DIR = process.env.MEDIA_DIR ?? path.resolve(__dirname, '/var/evilspins.media')
+const CARD_DIR = path.join(MEDIA_DIR, 'cards')
 
 interface FileEntry {
   stem: string

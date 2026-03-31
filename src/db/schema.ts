@@ -1,6 +1,10 @@
 import { pool } from './pool'
 
 export const SCHEMA_SQL = `
+  DROP TABLE IF EXISTS tarots CASCADE;
+  DROP TABLE IF EXISTS sides CASCADE;
+  DROP TABLE IF EXISTS artists CASCADE;
+  DROP TABLE IF EXISTS tapes CASCADE;
   DROP TABLE IF EXISTS cards CASCADE;
 
   CREATE TABLE cards (
@@ -18,7 +22,7 @@ export const SCHEMA_SQL = `
     -- Playing card assigned from date
     suit        CHAR(1) NOT NULL,       -- ♠ ♣ ♦ ♥
     rank        VARCHAR(2) NOT NULL,    -- A 2..10 J Q K
-    -- File paths relative to CARDS_DIR
+    -- File paths relative to MEDIA_DIR
     url_audio   TEXT NOT NULL,
     url_image   TEXT NOT NULL,
     blurhash    TEXT,                   -- Blurhash of the image for placeholder
@@ -29,12 +33,59 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
+  CREATE TABLE tapes (
+    id          TEXT PRIMARY KEY,
+    duration    INTEGER NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE artists (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL,
+    url         TEXT,
+    cover_id    TEXT,
+    cover_url   TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE sides (
+    id          SERIAL PRIMARY KEY,
+    tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
+    side        CHAR(1) NOT NULL,
+    duration    INTEGER NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(tape_id, side)
+  );
+
+  CREATE TABLE tarots (
+    id          SERIAL PRIMARY KEY,
+    esid        TEXT NOT NULL UNIQUE,
+    tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
+    side        CHAR(1) NOT NULL,
+    track_order INTEGER NOT NULL,
+    title       TEXT NOT NULL,
+    artist_id   INTEGER NOT NULL REFERENCES artists(id),
+    start       NUMERIC NOT NULL,
+    link        TEXT,
+    url_audio   TEXT NOT NULL,
+    url_image   TEXT,
+    url_tarot   TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(tape_id, side, track_order)
+  );
+
   -- Indexes for performance
   CREATE INDEX cards_date ON cards (year, month, day, hour);
   CREATE INDEX cards_suit_rank ON cards (suit, rank);
   CREATE INDEX cards_slug ON cards (slug);
   CREATE INDEX cards_stem ON cards (stem);
   CREATE INDEX cards_esid ON cards (esid);
+  CREATE INDEX tarots_tape_side_order ON tarots (tape_id, side, track_order);
+  CREATE INDEX tarots_artist_id ON tarots (artist_id);
 `
 
 export async function createSchema() {

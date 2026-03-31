@@ -9,7 +9,8 @@
     "db:down": "docker compose -f dev.database.yml down && docker volume rm evilspinsdata_postgres_data",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "start": "node dist/src/index.js",
-    "scan": "ts-node src/scanner/index.ts"
+    "scan": "ts-node src/scanner/index.ts",
+    "import:tarot": "ts-node src/db/tarot.ts"
   },
   "dependencies": {
     "blurhash": "^2.0.5",

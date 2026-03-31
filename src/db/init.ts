@@ -1,4 +1,5 @@
 import { createSchema } from './schema'
+import { importTarots } from './tarot'
 import { scanCards } from '../scanner'
 
 export async function initializeDatabase() {
@@ -7,8 +8,12 @@ export async function initializeDatabase() {
   try {
     // Create the complete schema
     await createSchema()
+
+    // Seed the tarot deck data from static file
+    console.log('🃏 Importing tarot card dataset...')
+    await importTarots()
     
-    // Run initial scan to populate the database
+    // Run initial scan to populate the card database
     console.log('📁 Running initial scan to populate database...')
     const result = await scanCards()
     
