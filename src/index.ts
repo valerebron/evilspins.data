@@ -15,7 +15,6 @@ const PORT = process.env.PORT
 
 const MEDIA_DIR = process.env.MEDIA_DIR
   ?? path.resolve(__dirname, '/var/evilspins.media')
-const CARDS_DIR = path.join(MEDIA_DIR, 'cards')
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors())
