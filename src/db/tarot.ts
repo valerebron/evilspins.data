@@ -84,7 +84,7 @@ export async function importTarots(): Promise<void> {
     for (const card of tarots as TarotInput[]) {
       const esid = buildTarotEsid(card.tapeId, card.side, card.order)
       const urlImage = buildCoverUrl(card.coverUrl)
-      const urlAudio = `https://data.evilspins.com/files/tarots/${card.tapeId}/${card.side}.mp3`
+      const urlAudio = `https://data.evilspins.com/files/tarots/${card.tapeId}${card.side}.mp3`
       const urlTarot = `https://data.evilspins.com/files/tarots/${card.order}.jpg`
 
       await client.query(
