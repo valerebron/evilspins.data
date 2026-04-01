@@ -22,8 +22,7 @@ app.use(cors())
 app.use(express.json())
 
 // Serve audio and image files directly
-app.use('/files/cards', express.static(CARDS_DIR))
-app.use('/files/tarots', express.static(path.join(MEDIA_DIR, 'tarot')))
+app.use('/files', express.static(MEDIA_DIR))
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/cards', cardsRouter)
