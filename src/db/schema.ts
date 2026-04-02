@@ -1,7 +1,7 @@
 import { pool } from './pool'
 
 export const SCHEMA_SQL = `
-  CREATE TABLE IF NOT EXISTS cards (
+  CREATE TABLE IF NOT EXISTS card (
     id          SERIAL PRIMARY KEY,
     -- Parsed from filename: YYYYMMDDHH__artist__title.ext
     esid        TEXT NOT NULL UNIQUE,   -- MD5 hash of date+artist+title
@@ -15,7 +15,7 @@ export const SCHEMA_SQL = `
     stem        TEXT,                    -- Original filename stem
     -- Playing card assigned from date
     suit        CHAR(1) NOT NULL,       -- ♠ ♣ ♦ ♥
-    rank        VARCHAR(2) NOT NULL,    -- A 2..10 J Q K
+    rank        VARCHAR(2) NOT NULL,    -- A 2..10 V D R
     -- File paths relative to MEDIA_DIR
     url_audio   TEXT NOT NULL,
     url_image   TEXT NOT NULL,
@@ -27,14 +27,14 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS tapes (
+  CREATE TABLE IF NOT EXISTS tape (
     id          TEXT PRIMARY KEY,
     duration    INTEGER NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS artists (
+  CREATE TABLE IF NOT EXISTS artist (
     id          INTEGER PRIMARY KEY,
     name        TEXT NOT NULL,
     url         TEXT,
@@ -44,9 +44,9 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS sides (
+  CREATE TABLE IF NOT EXISTS side (
     id          SERIAL PRIMARY KEY,
-    tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
+    tape_id     TEXT NOT NULL REFERENCES tape(id) ON DELETE CASCADE,
     side        CHAR(1) NOT NULL,
     duration    INTEGER NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -54,32 +54,32 @@ export const SCHEMA_SQL = `
     UNIQUE(tape_id, side)
   );
 
-  CREATE TABLE IF NOT EXISTS tarots (
+  CREATE TABLE IF NOT EXISTS tarot (
     id          SERIAL PRIMARY KEY,
     esid        TEXT NOT NULL UNIQUE,
-    tape_id     TEXT NOT NULL REFERENCES tapes(id) ON DELETE CASCADE,
+    tape_id     TEXT NOT NULL REFERENCES tape(id) ON DELETE CASCADE,
     side        CHAR(1) NOT NULL,
-    track_order INTEGER NOT NULL,
+    suit        INTEGER NOT NULL,
+    rank        INTEGER NOT NULL,
     title       TEXT NOT NULL,
-    artist_id   INTEGER NOT NULL REFERENCES artists(id),
+    artist_id   INTEGER NOT NULL REFERENCES artist(id),
     start       NUMERIC NOT NULL,
     link        TEXT,
     url_audio   TEXT NOT NULL,
     url_image   TEXT,
-    url_tarot   TEXT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(tape_id, side, track_order)
+    UNIQUE(tape_id, side, rank)
   );
 
   -- Indexes for performance
-  CREATE INDEX IF NOT EXISTS cards_date ON cards (year, month, day, hour);
-  CREATE INDEX IF NOT EXISTS cards_suit_rank ON cards (suit, rank);
-  CREATE INDEX IF NOT EXISTS cards_slug ON cards (slug);
-  CREATE INDEX IF NOT EXISTS cards_stem ON cards (stem);
-  CREATE INDEX IF NOT EXISTS cards_esid ON cards (esid);
-  CREATE INDEX IF NOT EXISTS tarots_tape_side_order ON tarots (tape_id, side, track_order);
-  CREATE INDEX IF NOT EXISTS tarots_artist_id ON tarots (artist_id);
+  CREATE INDEX IF NOT EXISTS card_date ON card (year, month, day, hour);
+  CREATE INDEX IF NOT EXISTS card_suit_rank ON card (suit, rank);
+  CREATE INDEX IF NOT EXISTS card_slug ON card (slug);
+  CREATE INDEX IF NOT EXISTS card_stem ON card (stem);
+  CREATE INDEX IF NOT EXISTS card_esid ON card (esid);
+  CREATE INDEX IF NOT EXISTS tarot_tape_side_rank ON tarot (tape_id, side, rank);
+  CREATE INDEX IF NOT EXISTS tarot_artist_id ON tarot (artist_id);
 `
 
 export async function createSchema() {

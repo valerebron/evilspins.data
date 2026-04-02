@@ -2,7 +2,7 @@ export const tape = [
   {
     id: 'ES01',
     duration: 3487 + 3773,
-    sides: {
+    side: {
       A: {
         duration: 3487,
       },
@@ -14,7 +14,7 @@ export const tape = [
   {
     id: 'ES00',
     duration: 2794 + 2470,
-    sides: {
+    side: {
       A: {
         duration: 2794,
       },
@@ -25,7 +25,7 @@ export const tape = [
   }
 ]
 
-export const artists = [
+export const artist = [
   { id: 0, name: "L'efondras", url: 'https://leffondras.bandcamp.com/music', coverUrl: '0024705317' },
   {
     id: 1,
@@ -88,9 +88,9 @@ export const artists = [
   }
 ]
 
-export const cards = [
+export const card = [
   {
-    order: 1,
+    rank: 1,
     tapeId: 'ES00',
     side: 'A',
     title: 'The grinding wheel',
@@ -100,7 +100,7 @@ export const cards = [
     coverUrl: 'a3236746052'
   },
   {
-    order: 2,
+    rank: 2,
     tapeId: 'ES00',
     side: 'A',
     title: 'Bleach',
@@ -110,7 +110,7 @@ export const cards = [
     coverUrl: 'a1714786533'
   },
   {
-    order: 3,
+    rank: 3,
     tapeId: 'ES00',
     side: 'A',
     title: 'Televised mind',
@@ -120,7 +120,7 @@ export const cards = [
     coverUrl: 'a3772806156'
   },
   {
-    order: 4,
+    rank: 4,
     tapeId: 'ES00',
     side: 'A',
     title: 'In it',
@@ -130,7 +130,7 @@ export const cards = [
     coverUrl: 'a1720372066'
   },
   {
-    order: 5,
+    rank: 5,
     tapeId: 'ES00',
     side: 'A',
     title: 'Bad michel',
@@ -140,7 +140,7 @@ export const cards = [
     coverUrl: 'a0984622869'
   },
   {
-    order: 6,
+    rank: 6,
     tapeId: 'ES00',
     side: 'A',
     title: 'Overall',
@@ -150,7 +150,7 @@ export const cards = [
     coverUrl: 'a0559661270'
   },
   {
-    order: 7,
+    rank: 7,
     tapeId: 'ES00',
     side: 'A',
     title: 'Blowup',
@@ -160,7 +160,7 @@ export const cards = [
     coverUrl: 'a1444895293'
   },
   {
-    order: 8,
+    rank: 8,
     tapeId: 'ES00',
     side: 'A',
     title: 'Guitar jet',
@@ -170,7 +170,7 @@ export const cards = [
     coverUrl: 'a1494681687'
   },
   {
-    order: 9,
+    rank: 9,
     tapeId: 'ES00',
     side: 'A',
     title: 'Intercontinental radio waves',
@@ -180,7 +180,7 @@ export const cards = [
     coverUrl: 'a0046738552'
   },
   {
-    order: 10,
+    rank: 10,
     tapeId: 'ES00',
     side: 'A',
     title: 'Here comes the sun',
@@ -190,7 +190,7 @@ export const cards = [
     coverUrl: 'a4102567047'
   },
   {
-    order: 11,
+    rank: 11,
     tapeId: 'ES00',
     side: 'A',
     title: 'Like in the movies',
@@ -200,7 +200,7 @@ export const cards = [
     coverUrl: 'a2203158939'
   },
   {
-    order: 1,
+    rank: 1,
     tapeId: 'ES00',
     side: 'B',
     title: "Ce que révèle l'éclipse",
@@ -210,7 +210,7 @@ export const cards = [
     coverUrl: 'a3236746052'
   },
   {
-    order: 2,
+    rank: 2,
     tapeId: 'ES00',
     side: 'B',
     title: "Bleedin' Gums Mushrool",
@@ -220,7 +220,7 @@ export const cards = [
     coverUrl: 'a1714786533'
   },
   {
-    order: 3,
+    rank: 3,
     tapeId: 'ES00',
     side: 'B',
     title: 'A lucid dream',
@@ -230,7 +230,7 @@ export const cards = [
     coverUrl: 'a3772806156'
   },
   {
-    order: 4,
+    rank: 4,
     tapeId: 'ES00',
     side: 'B',
     title: 'Lights off',
@@ -240,7 +240,7 @@ export const cards = [
     coverUrl: 'a1720372066'
   },
   {
-    order: 5,
+    rank: 5,
     tapeId: 'ES00',
     side: 'B',
     title: "I'm sentimental",
@@ -250,7 +250,7 @@ export const cards = [
     coverUrl: 'a2333676849'
   },
   {
-    order: 6,
+    rank: 6,
     tapeId: 'ES00',
     side: 'B',
     title: 'Thrill or trip',
@@ -260,7 +260,7 @@ export const cards = [
     coverUrl: 'a0559661270'
   },
   {
-    order: 7,
+    rank: 7,
     tapeId: 'ES00',
     side: 'B',
     title: 'Redhead',
@@ -270,7 +270,7 @@ export const cards = [
     coverUrl: 'a0594426943'
   },
   {
-    order: 8,
+    rank: 8,
     tapeId: 'ES00',
     side: 'B',
     title: 'Supersonic twist',
@@ -280,7 +280,7 @@ export const cards = [
     coverUrl: 'a1494681687'
   },
   {
-    order: 9,
+    rank: 9,
     tapeId: 'ES00',
     side: 'B',
     title: 'Flowers',
@@ -290,7 +290,7 @@ export const cards = [
     coverUrl: 'a3644668199'
   },
   {
-    order: 10,
+    rank: 10,
     tapeId: 'ES00',
     side: 'B',
     title: 'The shade',
@@ -300,7 +300,7 @@ export const cards = [
     coverUrl: 'a0804204790'
   },
   {
-    order: 11,
+    rank: 11,
     tapeId: 'ES00',
     side: 'B',
     title: 'Like in the movies',
@@ -310,7 +310,7 @@ export const cards = [
     coverUrl: 'a3647322740'
   },
   {
-    order: 1,
+    rank: 1,
     tapeId: 'ES01',
     side: 'A',
     title: 'He Walked In',
@@ -320,7 +320,7 @@ export const cards = [
     coverUrl: 'a0336300523'
   },
   {
-    order: 2,
+    rank: 2,
     tapeId: 'ES01',
     side: 'A',
     title: 'The Third Wave',
@@ -330,7 +330,7 @@ export const cards = [
     coverUrl: 'a2803689859'
   },
   {
-    order: 3,
+    rank: 3,
     tapeId: 'ES01',
     side: 'A',
     title: 'Broadcaster',
@@ -340,7 +340,7 @@ export const cards = [
     coverUrl: 'a3391719769'
   },
   {
-    order: 4,
+    rank: 4,
     tapeId: 'ES01',
     side: 'A',
     title: 'Mourn',
@@ -350,7 +350,7 @@ export const cards = [
     coverUrl: 'a0872900041'
   },
   {
-    order: 5,
+    rank: 5,
     tapeId: 'ES01',
     side: 'A',
     title: 'Let it Blow',
@@ -360,7 +360,7 @@ export const cards = [
     coverUrl: 'a4000148031'
   },
   {
-    order: 6,
+    rank: 6,
     tapeId: 'ES01',
     side: 'A',
     title: 'Sunday Mourning',
@@ -370,7 +370,7 @@ export const cards = [
     coverUrl: 'a0031987121'
   },
   {
-    order: 7,
+    rank: 7,
     tapeId: 'ES01',
     side: 'A',
     title: '3030 Instrumental',
@@ -380,7 +380,7 @@ export const cards = [
     coverUrl: 'a1948146136'
   },
   {
-    order: 8,
+    rank: 8,
     tapeId: 'ES01',
     side: 'A',
     title: 'Immortality Break',
@@ -390,7 +390,7 @@ export const cards = [
     coverUrl: 'a2749250329'
   },
   {
-    order: 9,
+    rank: 9,
     tapeId: 'ES01',
     side: 'A',
     title: 'Lazy Bones',
@@ -400,7 +400,7 @@ export const cards = [
     coverUrl: 'a1884221104'
   },
   {
-    order: 10,
+    rank: 10,
     tapeId: 'ES01',
     side: 'A',
     title: 'On the Train of Aches',
@@ -410,7 +410,7 @@ export const cards = [
     coverUrl: 'a1124177379'
   },
   {
-    order: 11,
+    rank: 11,
     tapeId: 'ES01',
     side: 'A',
     title: 'Me',
@@ -420,7 +420,7 @@ export const cards = [
     coverUrl: 'a1497022499'
   },
   {
-    order: 1,
+    rank: 1,
     tapeId: 'ES01',
     side: 'B',
     title: 'Lady Hawke Blues',
@@ -430,7 +430,7 @@ export const cards = [
     coverUrl: 'a2532623230'
   },
   {
-    order: 2,
+    rank: 2,
     tapeId: 'ES01',
     side: 'B',
     title: 'Dreamscapes',
@@ -440,7 +440,7 @@ export const cards = [
     coverUrl: 'a3498981203'
   },
   {
-    order: 3,
+    rank: 3,
     tapeId: 'ES01',
     side: 'B',
     title: 'Crispy Skin',
@@ -450,7 +450,7 @@ export const cards = [
     coverUrl: 'a2516727021'
   },
   {
-    order: 4,
+    rank: 4,
     tapeId: 'ES01',
     side: 'B',
     title: 'The Boy Who Stood Above The Earth',
@@ -460,7 +460,7 @@ export const cards = [
     coverUrl: 'a0350933426'
   },
   {
-    order: 5,
+    rank: 5,
     tapeId: 'ES01',
     side: 'B',
     title: 'Better Off Alone',
@@ -470,7 +470,7 @@ export const cards = [
     coverUrl: 'a4000148031'
   },
   {
-    order: 6,
+    rank: 6,
     tapeId: 'ES01',
     side: 'B',
     title: 'Celebration #1',
@@ -480,7 +480,7 @@ export const cards = [
     coverUrl: 'a0031987121'
   },
   {
-    order: 7,
+    rank: 7,
     tapeId: 'ES01',
     side: 'B',
     title: '3030 Instrumental',
@@ -490,7 +490,7 @@ export const cards = [
     coverUrl: 'a1948146136'
   },
   {
-    order: 8,
+    rank: 8,
     tapeId: 'ES01',
     side: 'B',
     title: 'The Emptiness Of Nothingness',
@@ -500,7 +500,7 @@ export const cards = [
     coverUrl: 'a1053923875'
   },
   {
-    order: 9,
+    rank: 9,
     tapeId: 'ES01',
     side: 'B',
     title: 'Rising',
@@ -510,7 +510,7 @@ export const cards = [
     coverUrl: 'a1884221104'
   },
   {
-    order: 10,
+    rank: 10,
     tapeId: 'ES01',
     side: 'B',
     title: 'The Last Time',
@@ -521,7 +521,7 @@ export const cards = [
       'https://i.discogs.com/Yr05_neEXwzPwKlDeV7dimmTG34atkAMgpxbMBhHBkI/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEyMTEw/ODE1LTE1Mjg1NjU1/NzQtMjcyOC5qcGVn.jpeg'
   },
   {
-    order: 11,
+    rank: 11,
     tapeId: 'ES01',
     side: 'B',
     title: 'Guajira Con Arpa',

@@ -1,39 +1,39 @@
 import { Router, Request, Response } from 'express'
 import {
-  getAllTarots,
-  getAllTapes,
+  getAllTarot,
+  getAllTape,
   getRandomTarot,
   getTarotById,
   getTarotByEsid,
-  getTarotsByTapeSide,
-  getTarotsByArtistId,
+  getTarotByTapeSide,
+  getTarotByArtistId,
 } from '../db/tarot'
 
 const router = Router()
 
-// ─── GET /api/tarots/tapes ───────────────────────────────────────────────────────
-router.get('/tapes', async (_req: Request, res: Response) => {
+// ─── GET /api/tarot/tape ───────────────────────────────────────────────────────
+router.get('/tape', async (_req: Request, res: Response) => {
   try {
-    const tapes = await getAllTapes()
-    res.json(tapes)
+    const tape = await getAllTape()
+    res.json(tape)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/tarots ─────────────────────────────────────────────────────────────
+// ─── GET /api/tarot ─────────────────────────────────────────────────────────────
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const tarots = await getAllTarots()
-    res.json(tarots)
+    const tarot = await getAllTarot()
+    res.json(tarot)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/tarots/by-tape-side?tapeId=ES00&side=A ─────────────────────────────
+// ─── GET /api/tarot/by-tape-side?tapeId=ES00&side=A ─────────────────────────────
 router.get('/by-tape-side', async (req: Request, res: Response) => {
   const { tapeId, side } = req.query as { tapeId?: string; side?: string }
   if (!tapeId || !side) {
@@ -41,15 +41,15 @@ router.get('/by-tape-side', async (req: Request, res: Response) => {
     return
   }
   try {
-    const tarots = await getTarotsByTapeSide(tapeId, side)
-    res.json(tarots)
+    const tarot = await getTarotByTapeSide(tapeId, side)
+    res.json(tarot)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/tarots/artist/:artistId ─────────────────────────────────────────
+// ─── GET /api/tarot/artist/:artistId ─────────────────────────────────────────
 router.get('/artist/:artistId', async (req: Request, res: Response) => {
   const artistId = parseInt(req.params.artistId, 10)
   if (isNaN(artistId)) {
@@ -57,15 +57,15 @@ router.get('/artist/:artistId', async (req: Request, res: Response) => {
     return
   }
   try {
-    const tarots = await getTarotsByArtistId(artistId)
-    res.json(tarots)
+    const tarot = await getTarotByArtistId(artistId)
+    res.json(tarot)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/tarots/esid/:esid ─────────────────────────────────────────────────
+// ─── GET /api/tarot/esid/:esid ─────────────────────────────────────────────────
 router.get('/esid/:esid', async (req: Request, res: Response) => {
   try {
     const tarot = await getTarotByEsid(req.params.esid)
@@ -80,7 +80,7 @@ router.get('/esid/:esid', async (req: Request, res: Response) => {
   }
 })
 
-// ─── GET /api/tarots/random ───────────────────────────────────────────────────
+// ─── GET /api/tarot/random ───────────────────────────────────────────────────
 router.get('/random', async (_req: Request, res: Response) => {
   try {
     const tarot = await getRandomTarot()
@@ -95,7 +95,7 @@ router.get('/random', async (_req: Request, res: Response) => {
   }
 })
 
-// ─── GET /api/tarots/:id ───────────────────────────────────────────────────────
+// ─── GET /api/tarot/:id ───────────────────────────────────────────────────────
 router.get('/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id, 10)
   if (isNaN(id)) {

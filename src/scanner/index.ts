@@ -1,7 +1,7 @@
 /**
  * Card scanner
  *
- * Scans the media cards directory, parses filenames, computes playing-card values,
+ * Scans the media card directory, parses filenames, computes playing-card values,
  * then upserts into Postgres.  Only rows whose mtime has changed are updated.
  *
  * Can be run standalone:  ts-node src/scanner/index.ts
@@ -24,10 +24,10 @@ import {
   deleteCardByEsid,
   getCardBySlug,
   getCardByStem,
-} from '../db/cards'
+} from '../db/card'
 
 const MEDIA_DIR = process.env.MEDIA_DIR ?? path.resolve(__dirname, '/var/evilspins.media')
-const CARD_DIR = path.join(MEDIA_DIR, 'cards')
+const CARD_DIR = path.join(MEDIA_DIR, 'card')
 
 interface FileEntry {
   stem: string
@@ -65,7 +65,7 @@ function groupByEsid(dir: string): Map<string, { audio?: FileEntry; image?: File
   return groups
 }
 
-export async function scanCards(): Promise<{ added: number; updated: number; removed: number }> {
+export async function scanCard(): Promise<{ added: number; updated: number; removed: number }> {
   console.log(`🔍  Scanning ${CARD_DIR}`)
 
   const storedMtimes = await getAllStoredMtimes()
@@ -76,7 +76,7 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
   // ── Collect all stems present on disk ───────────────────────────────────
   const diskStems = new Set(diskGroups.keys())
 
-  // ── Upsert cards found on disk ────────────────────────────────────────────
+  // ── Upsert card found on disk ────────────────────────────────────────────
   for (const [stem, { audio, image }] of diskGroups) {
     // A normal card MUST have an audio file — skip image-only entries
     if (!audio) continue
@@ -131,7 +131,7 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
 
     // Build paths relative to CARD_DIR so the frontend can resolve them
     const fullPath = (entry: FileEntry) =>
-      `https://${process.env.DOMAIN}/files/cards${entry.full.slice(CARD_DIR.length)}`
+      `https://${process.env.DOMAIN}/files/card${entry.full.slice(CARD_DIR.length)}`
 
     await upsertCard({
       esid,
@@ -159,7 +159,7 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
     else        { updated++; console.log(`  ✏️  ${stem}`) }
   }
 
-  // ── Remove cards no longer on disk ────────────────────────────────────────
+  // ── Remove card no longer on disk ────────────────────────────────────────
   for (const [stem] of storedMtimes) {
     // Only remove if stem is truly not on disk
     if (!diskStems.has(stem)) {
@@ -180,7 +180,7 @@ export async function scanCards(): Promise<{ added: number; updated: number; rem
 // ── Standalone entry point ────────────────────────────────────────────────────
 if (require.main === module) {
   const { pool } = require('../db/pool')
-  scanCards()
+  scanCard()
     .then(({ added, updated, removed }) => {
       console.log({ added, updated, removed })
     })

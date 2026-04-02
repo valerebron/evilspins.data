@@ -5,8 +5,8 @@ import path from 'path'
 
 dotenv.config()
 
-import cardsRouter from './api/cards'
-import tarotsRouter from './api/tarots'
+import cardRouter from './api/card'
+import tarotRouter from './api/tarot'
 import { initializeDatabase } from './db/init'
 import { startWatcher } from './watcher'
 
@@ -24,8 +24,8 @@ app.use(express.json())
 app.use('/files', express.static(MEDIA_DIR))
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/cards', cardsRouter)
-app.use('/api/tarots', tarotsRouter)
+app.use('/api/card', cardRouter)
+app.use('/api/tarot', tarotRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() })

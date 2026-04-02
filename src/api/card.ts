@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express'
 import {
-  getAllCards,
+  getAllCard,
   getCardById,
   getCardByEsid,
   getCardBySlug,
-  getCardsByDate,
-  getCardsBySuitAndRank,
-} from '../db/cards'
-import { scanCards } from '../scanner'
+  getCardByDate,
+  getCardBySuitAndRank,
+} from '../db/card'
+import { scanCard } from '../scanner'
 
 const router = Router()
 
@@ -15,8 +15,8 @@ const router = Router()
 // Returns a random card.
 router.get('/random', async (_req: Request, res: Response) => {
   try {
-    const cards = await getAllCards()
-    const randomCard = cards[Math.floor(Math.random() * cards.length)]
+    const card = await getAllCard()
+    const randomCard = card[Math.floor(Math.random() * card.length)]
     res.json(randomCard)
   } catch (err) {
     console.error(err)
@@ -24,19 +24,19 @@ router.get('/random', async (_req: Request, res: Response) => {
   }
 })
 
-// ─── GET /api/cards ─────────────────────────────────────────────────────────────
-// Returns all cards, ordered by date added.
+// ─── GET /api/card ─────────────────────────────────────────────────────────────
+// Returns all card, ordered by date added.
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const cards = await getAllCards()
-    res.json(cards)
+    const card = await getAllCard()
+    res.json(card)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/cards/by-suit-rank?suit=♠&rank=A ──────────────────────────────────
+// ─── GET /api/card/by-suit-rank?suit=♠&rank=A ──────────────────────────────────
 router.get('/by-suit-rank', async (req: Request, res: Response) => {
   const { suit, rank } = req.query as { suit?: string; rank?: string }
   if (!suit || !rank) {
@@ -44,15 +44,15 @@ router.get('/by-suit-rank', async (req: Request, res: Response) => {
     return
   }
   try {
-    const cards = await getCardsBySuitAndRank(suit, rank)
-    res.json(cards)
+    const card = await getCardBySuitAndRank(suit, rank)
+    res.json(card)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/cards/by-date?year=2024&month=9&day=15&hour=22 ────────────────────
+// ─── GET /api/card/by-date?year=2024&month=9&day=15&hour=22 ────────────────────
 router.get('/by-date', async (req: Request, res: Response) => {
   const { year, month, day, hour } = req.query as Record<string, string>
   if (!year || !month || !day || !hour) {
@@ -60,15 +60,15 @@ router.get('/by-date', async (req: Request, res: Response) => {
     return
   }
   try {
-    const cards = await getCardsByDate(+year, +month, +day, +hour)
-    res.json(cards)
+    const card = await getCardByDate(+year, +month, +day, +hour)
+    res.json(card)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
   }
 })
 
-// ─── GET /api/cards/esid/:esid ──────────────────────────────────────────────────
+// ─── GET /api/card/esid/:esid ──────────────────────────────────────────────────
 router.get('/esid/:esid', async (req: Request, res: Response) => {
   try {
     const card = await getCardByEsid(req.params.esid)
@@ -80,7 +80,7 @@ router.get('/esid/:esid', async (req: Request, res: Response) => {
   }
 })
 
-// ─── GET /api/cards/slug/:slug ───────────────────────────────────────────────────
+// ─── GET /api/card/slug/:slug ───────────────────────────────────────────────────
 router.get('/slug/:slug', async (req: Request, res: Response) => {
   try {
     const card = await getCardBySlug(req.params.slug)
@@ -92,7 +92,7 @@ router.get('/slug/:slug', async (req: Request, res: Response) => {
   }
 })
 
-// ─── GET /api/cards/:id ─────────────────────────────────────────────────────────
+// ─── GET /api/card/:id ─────────────────────────────────────────────────────────
 router.get('/:id', async (req: Request, res: Response) => {
   const id = parseInt(req.params.id, 10)
   if (isNaN(id)) { res.status(400).json({ error: 'Invalid id' }); return }
@@ -106,11 +106,11 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 })
 
-// ─── POST /apicards/rescan ─────────────────────────────────────────────────────
+// ─── POST /apicard/rescan ─────────────────────────────────────────────────────
 // Manually trigger a full re-scan (useful during development).
 router.post('/rescan', async (_req: Request, res: Response) => {
   try {
-    const result = await scanCards()
+    const result = await scanCard()
     res.json({ ok: true, ...result })
   } catch (err) {
     console.error(err)

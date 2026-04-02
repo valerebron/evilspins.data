@@ -1,12 +1,18 @@
 import { createHash } from 'crypto'
 import { pool } from './pool'
-import type { Tarot } from '../types'
-import { tape as tapes, artists, cards as tarots } from './tarotData'
+import type { Tarot, TarotWithArtist } from '../types'
+import { tape, artist, card as tarot } from './tarotData'
+
+const tarotSelectWithArtist = `
+  SELECT tarot.*, artist.name AS artist
+  FROM tarot
+  JOIN artist ON tarot.artist_id = artist.id
+`
 
 type Tape = {
   id: string
   duration: number
-  sides: {
+  side: {
     A: { duration: number }
     B: { duration: number }
   }
@@ -20,7 +26,7 @@ type Artist = {
 }
 
 type TarotInput = {
-  order: number
+  rank: number
   tapeId: string
   side: 'A' | 'B'
   title: string
@@ -30,8 +36,8 @@ type TarotInput = {
   coverUrl?: string
 }
 
-function buildTarotEsid(tapeId: string, side: string, order: number): string {
-  return createHash('md5').update(`${tapeId}:${side}:${order}`).digest('hex')
+function buildTarotEsid(tapeId: string, side: string, rank: number): string {
+  return createHash('md5').update(`${tapeId}:${side}:${rank}`).digest('hex')
 }
 
 function buildCoverUrl(value?: string): string | null {
@@ -43,84 +49,84 @@ function buildCoverUrl(value?: string): string | null {
   return null
 }
 
-export async function importTarots(): Promise<void> {
+export async function importTarot(): Promise<void> {
   const client = await pool.connect()
 
   try {
     await client.query('BEGIN')
 
-    for (const tape of tapes as Tape[]) {
+    for (const tapeItem of tape as Tape[]) {
       await client.query(
-        `INSERT INTO tapes (id, duration) VALUES ($1, $2)
+        `INSERT INTO tape (id, duration) VALUES ($1, $2)
          ON CONFLICT (id) DO UPDATE SET duration = EXCLUDED.duration, updated_at = now()`,
-        [tape.id, tape.duration],
+        [tapeItem.id, tapeItem.duration],
       )
 
       for (const side of ['A', 'B'] as const) {
         await client.query(
-          `INSERT INTO sides (tape_id, side, duration)
+          `INSERT INTO side (tape_id, side, duration)
            VALUES ($1, $2, $3)
            ON CONFLICT (tape_id, side) DO UPDATE SET duration = EXCLUDED.duration, updated_at = now()`,
-          [tape.id, side, tape.sides[side].duration],
+          [tapeItem.id, side, tapeItem.side[side].duration],
         )
       }
     }
 
-    for (const artist of artists as Artist[]) {
-      const coverUrl = buildCoverUrl(artist.coverUrl)
+    for (const artistItem of artist as Artist[]) {
+      const coverUrl = buildCoverUrl(artistItem.coverUrl)
 
       await client.query(
-        `INSERT INTO artists (id, name, url, cover_url)
+        `INSERT INTO artist (id, name, url, cover_url)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
            url = EXCLUDED.url,
            cover_url = EXCLUDED.cover_url,
            updated_at = now()`,
-        [artist.id, artist.name, artist.url ?? null, coverUrl],
+        [artistItem.id, artistItem.name, artistItem.url ?? null, coverUrl],
       )
     }
 
-    for (const card of tarots as TarotInput[]) {
-      const esid = buildTarotEsid(card.tapeId, card.side, card.order)
+    for (const card of tarot as TarotInput[]) {
+      const esid = buildTarotEsid(card.tapeId, card.side, card.rank)
       const urlImage = buildCoverUrl(card.coverUrl)
-      const urlAudio = `https://data.evilspins.com/files/tarots/${card.tapeId}${card.side}.mp3`
-      const urlTarot = `https://data.evilspins.com/files/tarots/${card.order}.jpg`
+      const urlAudio = `https://data.evilspins.com/files/tarot/${card.tapeId}${card.side}.mp3`
+      const suit = (card.side === 'A' ? 0 : 11) + (card.rank - 1)
 
       await client.query(
-        `INSERT INTO tarots
-           (esid, tape_id, side, track_order, title, artist_id, start, link, url_audio, url_image, url_tarot)
+        `INSERT INTO tarot
+           (esid, tape_id, side, suit, rank, title, artist_id, start, link, url_audio, url_image)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (esid) DO UPDATE SET
            tape_id = EXCLUDED.tape_id,
            side = EXCLUDED.side,
-           track_order = EXCLUDED.track_order,
+           suit = EXCLUDED.suit,
+           rank = EXCLUDED.rank,
            title = EXCLUDED.title,
            artist_id = EXCLUDED.artist_id,
            start = EXCLUDED.start,
            link = EXCLUDED.link,
            url_audio = EXCLUDED.url_audio,
            url_image = EXCLUDED.url_image,
-           url_tarot = EXCLUDED.url_tarot,
            updated_at = now()`,
         [
           esid,
           card.tapeId,
           card.side,
-          card.order,
+          suit,
+          card.rank,
           card.title,
           card.artist,
           card.start,
           card.link ?? null,
           urlAudio,
           urlImage,
-          urlTarot,
         ],
       )
     }
 
     await client.query('COMMIT')
-    console.log(`✅ Tarot dataset imported: ${tarots.length} cards, ${artists.length} artists, ${tapes.length} tapes`)
+    console.log(`✅ Tarot dataset imported: ${tarot.length} card, ${artist.length} artist, ${tape.length} tape`)
   } catch (error) {
     await client.query('ROLLBACK')
     console.error('❌ Tarot import failed:', error)
@@ -130,51 +136,51 @@ export async function importTarots(): Promise<void> {
   }
 }
 
-export async function getAllTarots(): Promise<Tarot[]> {
-  const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots ORDER BY tape_id, side, track_order`)
+export async function getAllTarot(): Promise<TarotWithArtist[]> {
+  const { rows } = await pool.query<TarotWithArtist>(`${tarotSelectWithArtist} ORDER BY tape_id, side, rank`)
   return rows
 }
 
-export async function getAllTapes(): Promise<{ id: string; duration: number; created_at: Date; updated_at: Date }[]> {
+export async function getAllTape(): Promise<{ id: string; duration: number; created_at: Date; updated_at: Date }[]> {
   const { rows } = await pool.query<{ id: string; duration: number; created_at: Date; updated_at: Date }>(
-    `SELECT id, duration, created_at, updated_at FROM tapes ORDER BY id`,
+    `SELECT id, duration, created_at, updated_at FROM tape ORDER BY id`,
   )
   return rows
 }
 
-export async function getRandomTarot(): Promise<Tarot | null> {
-  const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots ORDER BY RANDOM() LIMIT 1`)
+export async function getRandomTarot(): Promise<TarotWithArtist | null> {
+  const { rows } = await pool.query<TarotWithArtist>(`${tarotSelectWithArtist} ORDER BY RANDOM() LIMIT 1`)
   return rows[0] ?? null
 }
 
-export async function getTarotById(id: number): Promise<Tarot | null> {
-  const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots WHERE id = $1`, [id])
+export async function getTarotById(id: number): Promise<TarotWithArtist | null> {
+  const { rows } = await pool.query<TarotWithArtist>(`${tarotSelectWithArtist} WHERE tarot.id = $1`, [id])
   return rows[0] ?? null
 }
 
-export async function getTarotByEsid(esid: string): Promise<Tarot | null> {
-  const { rows } = await pool.query<Tarot>(`SELECT * FROM tarots WHERE esid = $1`, [esid])
+export async function getTarotByEsid(esid: string): Promise<TarotWithArtist | null> {
+  const { rows } = await pool.query<TarotWithArtist>(`${tarotSelectWithArtist} WHERE tarot.esid = $1`, [esid])
   return rows[0] ?? null
 }
 
-export async function getTarotsByTapeSide(tapeId: string, side: string): Promise<Tarot[]> {
-  const { rows } = await pool.query<Tarot>(
-    `SELECT * FROM tarots WHERE tape_id = $1 AND side = $2 ORDER BY track_order`,
+export async function getTarotByTapeSide(tapeId: string, side: string): Promise<TarotWithArtist[]> {
+  const { rows } = await pool.query<TarotWithArtist>(
+    `${tarotSelectWithArtist} WHERE tarot.tape_id = $1 AND tarot.side = $2 ORDER BY tarot.rank`,
     [tapeId, side],
   )
   return rows
 }
 
-export async function getTarotsByArtistId(artistId: number): Promise<Tarot[]> {
-  const { rows } = await pool.query<Tarot>(
-    `SELECT * FROM tarots WHERE artist_id = $1 ORDER BY tape_id, side, track_order`,
+export async function getTarotByArtistId(artistId: number): Promise<TarotWithArtist[]> {
+  const { rows } = await pool.query<TarotWithArtist>(
+    `${tarotSelectWithArtist} WHERE tarot.artist_id = $1 ORDER BY tarot.tape_id, tarot.side, tarot.rank`,
     [artistId],
   )
   return rows
 }
 
 if (require.main === module) {
-  importTarots()
+  importTarot()
     .then(() => process.exit(0))
     .catch(() => process.exit(1))
 }

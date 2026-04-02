@@ -1,5 +1,5 @@
 /**
- * Watches the media directory's cards subfolder for file changes and triggers a debounced re-scan.
+ * Watches the media directory's card subfolder for file changes and triggers a debounced re-scan.
  *
  * Uses Node's built-in fs.watch (no extra deps).
  * On busy systems you may want to swap this for chokidar for more reliability.
@@ -7,10 +7,10 @@
 
 import fs from 'fs'
 import path from 'path'
-import { scanCards } from '../scanner'
+import { scanCard } from '../scanner'
 
 const MEDIA_DIR = process.env.MEDIA_DIR ?? path.resolve(__dirname, '/var/evilspins.media')
-const CARDS_DIR = path.join(MEDIA_DIR, 'cards')
+const CARD_DIR = path.join(MEDIA_DIR, 'card')
 const DEBOUNCE_MS   = 2_000   // wait 2 s after last event before scanning
 
 let debounceTimer: NodeJS.Timeout | null = null
@@ -22,7 +22,7 @@ function scheduleRescan(eventType: string, filename: string | null) {
 
   debounceTimer = setTimeout(async () => {
     try {
-      await scanCards()
+      await scanCard()
     } catch (err) {
       console.error('❌  Re-scan failed', err)
     }
@@ -30,16 +30,16 @@ function scheduleRescan(eventType: string, filename: string | null) {
 }
 
 export function startWatcher(): fs.FSWatcher {
-  if (!fs.existsSync(CARDS_DIR)) {
-    throw new Error(`Cards directory does not exist: ${CARDS_DIR}`)
+  if (!fs.existsSync(CARD_DIR)) {
+    throw new Error(`Card directory does not exist: ${CARD_DIR}`)
   }
 
-  const watcher = fs.watch(CARDS_DIR, { persistent: true }, scheduleRescan)
+  const watcher = fs.watch(CARD_DIR, { persistent: true }, scheduleRescan)
 
   watcher.on('error', (err) => {
     console.error('Watcher error:', err)
   })
 
-  console.log(`👁️   Watching ${CARDS_DIR}`)
+  console.log(`👁️   Watching ${CARD_DIR}`)
   return watcher
 }
