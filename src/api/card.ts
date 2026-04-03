@@ -11,7 +11,7 @@ import { scanCard } from '../scanner'
 
 const router = Router()
 
-// ─── GET /api/random ─────────────────────────────────────────────────────────────
+// ─── GET /api/card/random ─────────────────────────────────────────────────────────────
 // Returns a random card.
 router.get('/random', async (_req: Request, res: Response) => {
   try {
