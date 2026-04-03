@@ -131,7 +131,7 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
 
     // Build paths relative to CARD_DIR so the frontend can resolve them
     const fullPath = (entry: FileEntry) =>
-      `https://${process.env.DOMAIN}/files/card${entry.full.slice(CARD_DIR.length)}`
+      `files/card${entry.full.slice(CARD_DIR.length)}`
 
     await upsertCard({
       esid,

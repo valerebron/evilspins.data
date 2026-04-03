@@ -14,7 +14,7 @@ const app  = express()
 const PORT = process.env.PORT
 
 const MEDIA_DIR = process.env.MEDIA_DIR
-  ?? path.resolve(__dirname, '/var/evilspins.media')
+  ?? ''
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors())
