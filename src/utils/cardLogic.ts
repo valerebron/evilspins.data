@@ -15,7 +15,7 @@ export function getCardFromDate(date: Date): { suit: CardSuit; rank: CardRank } 
     : month >= 6 && month <= 8 ? '♦'
     : '♣'
 
-  const ranks: CardRank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+  const ranks: CardRank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R']
   const rank = ranks[(day + hour) % ranks.length]
 
   return { suit, rank }
