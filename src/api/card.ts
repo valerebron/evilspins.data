@@ -6,6 +6,7 @@ import {
   getCardBySlug,
   getCardByDate,
   getCardBySuitAndRank,
+  getClubsJacks,
 } from '../db/card'
 import { scanCard } from '../scanner'
 
@@ -46,6 +47,18 @@ router.get('/by-suit-rank', async (req: Request, res: Response) => {
   try {
     const card = await getCardBySuitAndRank(suit, rank)
     res.json(card)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// ─── GET /api/card/clubs-jacks ─────────────────────────────────────────────────────
+// Returns all jacks of clubs.
+router.get('/clubs-jacks', async (_req: Request, res: Response) => {
+  try {
+    const cards = await getClubsJacks()
+    res.json(cards)
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })

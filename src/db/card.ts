@@ -71,6 +71,13 @@ export async function getCardBySuitAndRank(
   return rows
 }
 
+export async function getClubsJacks(): Promise<Card[]> {
+  const { rows } = await pool.query<Card>(
+    `SELECT * FROM card WHERE suit = '♣' AND rank = 'V' ORDER BY year, month, day, hour`,
+  )
+  return rows
+}
+
 // ─── Watcher helpers ─────────────────────────────────────────────────────────
 
 /** Returns a map of stem → file_mtime for all stored card. Fast O(1) lookups. */
