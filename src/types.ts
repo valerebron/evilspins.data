@@ -19,7 +19,7 @@ export interface Card {
   rank: string
   url_audio: string
   url_image: string
-  blurhash?: string
+  blurhash: string
   file_mtime: number
   file_size: number
   created_at: Date
