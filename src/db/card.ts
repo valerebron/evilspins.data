@@ -3,10 +3,21 @@ import type { Card } from '../types'
 
 // ─── Read ────────────────────────────────────────────────────────────────────
 
-export async function getAllCard(): Promise<Card[]> {
-  const { rows } = await pool.query<Card>(
-    `SELECT * FROM card ORDER BY year, month, day, hour`,
-  )
+export async function getAllCard(limit?: number, offset?: number): Promise<Card[]> {
+  let query = `SELECT * FROM card ORDER BY year, month, day, hour`
+  const params: any[] = []
+  
+  if (limit !== undefined) {
+    query += ` LIMIT $${params.length + 1}`
+    params.push(limit)
+  }
+  
+  if (offset !== undefined) {
+    query += ` OFFSET $${params.length + 1}`
+    params.push(offset)
+  }
+  
+  const { rows } = await pool.query<Card>(query, params)
   return rows
 }
 
@@ -148,6 +159,13 @@ export async function upsertCard(card: UpsertCardInput): Promise<void> {
       card.created_at,
     ],
   )
+}
+
+export async function getCardCount(): Promise<number> {
+  const { rows } = await pool.query<{ count: string }>(
+    `SELECT COUNT(*) as count FROM card`
+  )
+  return parseInt(rows[0].count, 10)
 }
 
 export async function deleteCardByEsid(esid: string): Promise<void> {

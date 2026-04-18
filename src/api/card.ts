@@ -7,6 +7,7 @@ import {
   getCardByDate,
   getCardBySuitAndRank,
   getClubsJacks,
+  getCardCount,
 } from '../db/card'
 import { scanCard } from '../scanner'
 
@@ -27,10 +28,41 @@ router.get('/random', async (_req: Request, res: Response) => {
 
 // ─── GET /api/card ─────────────────────────────────────────────────────────────
 // Returns all card, ordered by date added.
-router.get('/', async (_req: Request, res: Response) => {
+// Supports pagination with query parameters: page, limit
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const card = await getAllCard()
-    res.json(card)
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 50
+    const offset = (page - 1) * limit
+    
+    // Validate parameters
+    if (page < 1) {
+      res.status(400).json({ error: 'page must be >= 1' })
+      return
+    }
+    if (limit < 1 || limit > 1000) {
+      res.status(400).json({ error: 'limit must be between 1 and 1000' })
+      return
+    }
+    
+    const [cards, total] = await Promise.all([
+      getAllCard(limit, offset),
+      getCardCount()
+    ])
+    
+    const totalPages = Math.ceil(total / limit)
+    
+    res.json({
+      data: cards,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Internal server error' })
