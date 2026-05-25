@@ -8,6 +8,8 @@ import {
   getCardBySuitAndRank,
   getClubsJacks,
   getCardCount,
+  getCards,
+  getFilteredCardCount,
 } from '../db/card'
 import { scanCard } from '../scanner'
 
@@ -27,15 +29,17 @@ router.get('/random', async (_req: Request, res: Response) => {
 })
 
 // ─── GET /api/card ─────────────────────────────────────────────────────────────
-// Returns all card, ordered by date added.
-// Supports pagination with query parameters: page, limit
+// Returns cards filtered by query parameters or paginated if no filters are provided.
 router.get('/', async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 50
     const offset = (page - 1) * limit
-    
-    // Validate parameters
+    const search = (req.query.search as string)?.trim()
+    const suit = (req.query.suit as string)?.trim()
+    const rank = (req.query.rank as string)?.trim()
+    const year = req.query.year ? parseInt(req.query.year as string, 10) : undefined
+
     if (page < 1) {
       res.status(400).json({ error: 'page must be >= 1' })
       return
@@ -44,14 +48,37 @@ router.get('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'limit must be between 1 and 1000' })
       return
     }
-    
+
+    const hasFilter = Boolean(search || suit || rank || year !== undefined)
+
+    if (hasFilter) {
+      const [cards, total] = await Promise.all([
+        getCards({ search, suit, rank, year, limit, offset }),
+        getFilteredCardCount({ search, suit, rank, year }),
+      ])
+
+      const totalPages = Math.ceil(total / limit)
+      res.json({
+        data: cards,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      })
+      return
+    }
+
     const [cards, total] = await Promise.all([
       getAllCard(limit, offset),
-      getCardCount()
+      getCardCount(),
     ])
-    
+
     const totalPages = Math.ceil(total / limit)
-    
+
     res.json({
       data: cards,
       pagination: {
@@ -60,8 +87,8 @@ router.get('/', async (req: Request, res: Response) => {
         total,
         totalPages,
         hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     })
   } catch (err) {
     console.error(err)

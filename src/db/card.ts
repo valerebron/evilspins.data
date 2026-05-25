@@ -3,6 +3,85 @@ import type { Card } from '../types'
 
 // ─── Read ────────────────────────────────────────────────────────────────────
 
+export interface CardFilter {
+  search?: string
+  suit?: string
+  rank?: string
+  year?: number
+  limit?: number
+  offset?: number
+}
+
+export async function getCards(filter: CardFilter = {}): Promise<Card[]> {
+  const params: any[] = []
+  let query = `SELECT * FROM card WHERE 1=1`
+
+  if (filter.search) {
+    query += ` AND (LOWER(title) LIKE $${params.length + 1} OR LOWER(artist) LIKE $${params.length + 2})`
+    const searchText = `%${filter.search.toLowerCase()}%`
+    params.push(searchText, searchText)
+  }
+
+  if (filter.suit) {
+    query += ` AND suit = $${params.length + 1}`
+    params.push(filter.suit)
+  }
+
+  if (filter.rank) {
+    query += ` AND rank = $${params.length + 1}`
+    params.push(filter.rank)
+  }
+
+  if (filter.year !== undefined) {
+    query += ` AND year = $${params.length + 1}`
+    params.push(filter.year)
+  }
+
+  query += ` ORDER BY year, month, day, hour`
+
+  if (filter.limit !== undefined) {
+    query += ` LIMIT $${params.length + 1}`
+    params.push(filter.limit)
+  }
+
+  if (filter.offset !== undefined) {
+    query += ` OFFSET $${params.length + 1}`
+    params.push(filter.offset)
+  }
+
+  const { rows } = await pool.query<Card>(query, params)
+  return rows
+}
+
+export async function getFilteredCardCount(filter: CardFilter = {}): Promise<number> {
+  const params: any[] = []
+  let query = `SELECT COUNT(*) AS count FROM card WHERE 1=1`
+
+  if (filter.search) {
+    query += ` AND (LOWER(title) LIKE $${params.length + 1} OR LOWER(artist) LIKE $${params.length + 2})`
+    const searchText = `%${filter.search.toLowerCase()}%`
+    params.push(searchText, searchText)
+  }
+
+  if (filter.suit) {
+    query += ` AND suit = $${params.length + 1}`
+    params.push(filter.suit)
+  }
+
+  if (filter.rank) {
+    query += ` AND rank = $${params.length + 1}`
+    params.push(filter.rank)
+  }
+
+  if (filter.year !== undefined) {
+    query += ` AND year = $${params.length + 1}`
+    params.push(filter.year)
+  }
+
+  const { rows } = await pool.query<{ count: string }>(query, params)
+  return parseInt(rows[0].count, 10)
+}
+
 export async function getAllCard(limit?: number, offset?: number): Promise<Card[]> {
   let query = `SELECT * FROM card ORDER BY year, month, day, hour`
   const params: any[] = []
