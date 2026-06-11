@@ -4,25 +4,22 @@ export const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS card (
     id          SERIAL PRIMARY KEY,
     -- Parsed from filename: YYYYMMDDHH__artist__title.ext
-    esid        TEXT NOT NULL UNIQUE,   -- MD5 hash of date+artist+title
+    esid        TEXT NOT NULL UNIQUE,
     year        SMALLINT NOT NULL,
     month       SMALLINT NOT NULL,
     day         SMALLINT NOT NULL,
     hour        SMALLINT NOT NULL,
     artist      TEXT NOT NULL,
     title       TEXT NOT NULL,
-    slug        TEXT NOT NULL UNIQUE,    -- URL-friendly slug from artist+title
-    stem        TEXT,                    -- Original filename stem
-    -- Playing card assigned from date
-    suit        CHAR(1) NOT NULL,       -- ♠ ♣ ♦ ♥
-    rank        VARCHAR(2) NOT NULL,    -- A 2..10 V D R
-    -- File paths relative to MEDIA_DIR
-    url_audio   TEXT NOT NULL,
-    url_image   TEXT NOT NULL,
-    blurhash    TEXT,                   -- Blurhash of the image for placeholder
-    -- Watcher metadata: used to detect changes without full re-scan
-    file_mtime  BIGINT NOT NULL,        -- mtime of the audio file in ms
-    file_size   BIGINT NOT NULL,        -- audio file size in bytes
+    slug        TEXT NOT NULL UNIQUE,
+    stem        TEXT,
+    suit        CHAR(1) NOT NULL,
+    rank        VARCHAR(2) NOT NULL,
+    ext_audio   TEXT NOT NULL,
+    ext_image   TEXT NOT NULL,
+    blurhash    TEXT,
+    file_mtime  BIGINT NOT NULL,
+    file_size   BIGINT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL,
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
@@ -65,14 +62,14 @@ export const SCHEMA_SQL = `
     artist_id   INTEGER NOT NULL REFERENCES artist(id),
     start       NUMERIC NOT NULL,
     link        TEXT,
-    url_audio   TEXT NOT NULL,
-    url_image   TEXT,
+    ext_audio   TEXT NOT NULL,
+    ext_image   TEXT,
+    blurhash    TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(tape_id, side, rank)
   );
 
-  -- Indexes for performance
   CREATE INDEX IF NOT EXISTS card_date ON card (year, month, day, hour);
   CREATE INDEX IF NOT EXISTS card_suit_rank ON card (suit, rank);
   CREATE INDEX IF NOT EXISTS card_slug ON card (slug);
@@ -82,7 +79,7 @@ export const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS tarot_artist_id ON tarot (artist_id);
 `
 
-export async function createSchema() {
+export async function createSchema(): Promise<void> {
   const client = await pool.connect()
   try {
     await client.query(SCHEMA_SQL)

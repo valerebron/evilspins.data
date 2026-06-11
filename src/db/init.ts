@@ -3,18 +3,14 @@ import { importTarot } from './tarot'
 import { scanCard } from '../scanner'
 import { pool } from './pool'
 
-export async function initializeDatabase() {
+export async function initializeDatabase(): Promise<{ added: number; updated: number; removed: number }> {
   console.log('🚀 Initializing database...')
-  
   try {
-    // Create the complete schema if it doesn't already exist
     await createSchema()
-
-    // Seed the tarot deck data from static file
     console.log('🃏 Importing tarot card dataset...')
     await importTarot()
 
-    const { rows } = await pool.query<{ count: string }>(`SELECT COUNT(*) AS count FROM card`)
+    const { rows } = await pool.query(`SELECT COUNT(*) AS count FROM card`)
     const cardCount = Number(rows[0]?.count ?? 0)
 
     if (cardCount === 0) {
@@ -33,7 +29,6 @@ export async function initializeDatabase() {
   }
 }
 
-// Standalone execution
 if (require.main === module) {
   initializeDatabase()
     .then(() => {

@@ -7,6 +7,8 @@ dotenv.config()
 
 import cardRouter from './api/card'
 import tarotRouter from './api/tarot'
+
+import { addMediaUrls } from './middleware/url';
 import { initializeDatabase } from './db/init'
 import { startWatcher } from './watcher'
 
@@ -24,7 +26,7 @@ app.use(express.json())
 app.use('/files', express.static(MEDIA_DIR))
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use('/api/card', cardRouter)
+app.use('/api/card', addMediaUrls, cardRouter);
 app.use('/api/tarot', tarotRouter)
 
 app.get('/api/health', (_req, res) => {

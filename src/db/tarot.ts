@@ -95,7 +95,7 @@ export async function importTarot(): Promise<void> {
 
       await client.query(
         `INSERT INTO tarot
-           (esid, tape_id, side, suit, rank, title, artist_id, start, link, url_audio, url_image)
+           (esid, tape_id, side, suit, rank, title, artist_id, start, link, ext_audio, ext_image)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (esid) DO UPDATE SET
            tape_id = EXCLUDED.tape_id,
@@ -106,8 +106,8 @@ export async function importTarot(): Promise<void> {
            artist_id = EXCLUDED.artist_id,
            start = EXCLUDED.start,
            link = EXCLUDED.link,
-           url_audio = EXCLUDED.url_audio,
-           url_image = EXCLUDED.url_image,
+           ext_audio = EXCLUDED.ext_audio,
+           ext_image = EXCLUDED.ext_image,
            updated_at = now()`,
         [
           esid,

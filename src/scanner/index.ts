@@ -133,6 +133,11 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
     const fullPath = (entry: FileEntry) =>
       `files/card${entry.full.slice(CARD_DIR.length)}`
 
+    // Function to extract file extension without leading dot
+    const getFileExtension = (filePath: string): string => {
+      return path.extname(filePath).slice(1).toLowerCase(); // Removes the leading '.'
+    };
+
     await upsertCard({
       esid,
       stem: audio.stem,  // Add the stem here
@@ -145,8 +150,8 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
       slug,
       suit,
       rank,
-      url_audio: fullPath(audio),
-      url_image: image ? fullPath(image) : '',
+      ext_audio: getFileExtension(audio.full),
+      ext_image: image ? getFileExtension(image.full) : '',
       blurhash,
       file_mtime: audio.mtime,
       file_size: audio.size,

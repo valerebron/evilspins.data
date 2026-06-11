@@ -17,8 +17,8 @@ export interface Card {
   slug: string
   suit: string
   rank: string
-  url_audio: string
-  url_image: string
+  ext_audio: string
+  ext_image: string
   blurhash: string
   file_mtime: number
   file_size: number
@@ -59,8 +59,8 @@ export interface Tarot {
   artist_id: number
   start: number
   link?: string
-  url_audio: string
-  url_image?: string
+  ext_audio: string
+  ext_image?: string
   created_at: Date
   updated_at: Date
 }
