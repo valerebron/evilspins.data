@@ -4,6 +4,7 @@ services:
     image: evilspins-data
     container_name: evilspins.data
     restart: unless-stopped
+    user: "0:0"
     environment:
       NODE_ENV: production
       VIRTUAL_HOST: "${DOMAIN}"
