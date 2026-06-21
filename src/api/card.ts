@@ -126,18 +126,7 @@ router.post('/upload', upload.fields([
     return
   }
 
-  let slug = slugBase
-  let slugSuffix = 1
-  while (true) {
-    try {
-      const existingCard = await getCardBySlug(slug)
-      if (!existingCard) break
-      slug = `${slugBase}-${slugSuffix}`
-      slugSuffix += 1
-    } catch (err) {
-      break
-    }
-  }
+  const slug = slugBase
 
   res.status(201).json({
     ok: true,
