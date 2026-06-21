@@ -123,10 +123,10 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
     }
 
     // Generate blurhash if image exists
-    let blurhash: string | undefined
+    let blurhash: string | null = null
     if (image) {
       const generated = await generateBlurhash(image.full)
-      blurhash = generated || undefined
+      blurhash = generated || null
     }
 
     // Build paths relative to CARD_DIR so the frontend can resolve them

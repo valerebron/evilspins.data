@@ -8,6 +8,7 @@ export type CardRank = 'A' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10
 export interface Card {
   id: number
   esid: string
+  stem: string | null
   year: number
   month: number
   day: number
@@ -19,7 +20,7 @@ export interface Card {
   rank: string
   ext_audio: string
   ext_image: string
-  blurhash: string
+  blurhash: string | null
   file_mtime: number
   file_size: number
   created_at: Date
