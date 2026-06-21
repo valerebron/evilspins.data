@@ -2,10 +2,16 @@ import { pool } from './pool'
 import type { Card } from '../types'
 
 export async function getAllCard(limit = 1000, offset = 0): Promise<Card[]> {
-  const { rows } = await pool.query(`SELECT * FROM card ORDER BY year, month, day, hour LIMIT $1 OFFSET $2`, [limit, offset])
+  const { rows } = await pool.query(
+    `SELECT *
+     FROM card
+     ORDER BY created_at DESC
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  )
+
   return rows as Card[]
 }
-
 export async function getCardById(id: number): Promise<Card | null> {
   const { rows } = await pool.query(`SELECT * FROM card WHERE id = $1`, [id])
   return rows[0] ?? null
