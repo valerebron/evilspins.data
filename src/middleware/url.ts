@@ -1,7 +1,7 @@
 import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 
-const MEDIA_URL = 'files/card';  // Assuming this is the base URL for your media files
+const MEDIA_URL = 'files';
 
 export function addMediaUrls(req: Request, res: Response, next: NextFunction) {
   const originalJson = res.json.bind(res);

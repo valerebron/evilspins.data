@@ -21,8 +21,8 @@ import { createEsid, slugify } from '../utils/slugify'
 import { getCardFromDate } from '../utils/cardLogic'
 
 const router = Router()
-const MEDIA_DIR = process.env.MEDIA_DIR ?? path.resolve(__dirname, '/var/evilspins.media')
-const CARD_DIR = path.join(MEDIA_DIR, 'card')
+const MEDIA_DIR = process.env.MEDIA_DIR ?? '/var/cards'
+const CARD_DIR = MEDIA_DIR
 fs.mkdirSync(CARD_DIR, { recursive: true })
 
 const storage = multer.diskStorage({
@@ -106,7 +106,7 @@ router.post('/upload', upload.fields([
     const filename = getUniqueFilename(safeStem, ext)
     const targetPath = path.join(CARD_DIR, filename)
     if (audioFile.path !== targetPath) fs.renameSync(audioFile.path, targetPath)
-    audioPath = `files/card/${filename}`
+    audioPath = `files/${filename}`
     const stats = fs.statSync(targetPath)
     fileMtimeNum = Math.floor(stats.mtimeMs)
     fileSizeNum = stats.size
@@ -118,7 +118,7 @@ router.post('/upload', upload.fields([
     const filename = getUniqueFilename(safeStem, ext)
     const targetPath = path.join(CARD_DIR, filename)
     if (imageFile.path !== targetPath) fs.renameSync(imageFile.path, targetPath)
-    imagePath = `files/card/${filename}`
+    imagePath = `files/${filename}`
   }
 
   if (!audioPath) {

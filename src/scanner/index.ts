@@ -1,15 +1,6 @@
-/**
- * Card scanner
- *
- * Scans the media card directory, parses filenames, computes playing-card values,
- * then upserts into Postgres.  Only rows whose mtime has changed are updated.
- *
- * Can be run standalone:  ts-node src/scanner/index.ts
- * Or called programmatically from the watcher / on startup.
- */
-
 import fs from 'fs'
 import path from 'path'
+import { createHash } from 'crypto'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -23,13 +14,16 @@ import {
   upsertCard,
   deleteCardByEsid,
   getCardBySlug,
-  getCardByStem,
 } from '../db/card'
+import { removeMissingBoxes, replaceBoxCards, upsertBox } from '../db/box'
 
-const MEDIA_DIR = process.env.MEDIA_DIR ?? path.resolve(__dirname, '/var/evilspins.media')
-const CARD_DIR = path.join(MEDIA_DIR, 'card')
+const MEDIA_DIR = process.env.MEDIA_DIR ?? '/var/cards'
+const CARD_DIR = MEDIA_DIR
 
 interface FileEntry {
+  relStem: string
+  boxId: string | null
+  side: 'A' | 'B' | null
   stem: string
   ext:  string
   full: string
@@ -37,73 +31,163 @@ interface FileEntry {
   size: number
 }
 
-/**
- * Groups files by their stem (filename without extension).
- * Returns a map: stem → { audio?, image? }
- */
-function groupByEsid(dir: string): Map<string, { audio?: FileEntry; image?: FileEntry }> {
-  const entries = fs.readdirSync(dir)
-  const groups  = new Map<string, { audio?: FileEntry; image?: FileEntry }>()
+interface BoxMeta {
+  id: string
+  name: string
+  artists: Record<string, unknown>
+  coverFront: string | null
+  coverBack: string | null
+}
 
-  for (const filename of entries) {
-    const full  = path.join(dir, filename)
-    const stat  = fs.statSync(full)
-    if (!stat.isFile()) continue
+interface GroupEntry {
+  audio?: FileEntry
+  image?: FileEntry
+}
 
-    const parsed = path.parse(filename)
-    const stem   = parsed.name
-    const ext    = parsed.ext.toLowerCase()
-    const entry: FileEntry = { stem, ext, full, mtime: Math.floor(stat.mtimeMs), size: stat.size }
+function hash(input: string): string {
+  return createHash('md5').update(input).digest('hex')
+}
 
-    if (!groups.has(stem)) groups.set(stem, {})
-    const group = groups.get(stem)!
+function getEntry(dir: string, filename: string, boxId: string | null, side: 'A' | 'B' | null): FileEntry {
+  const full = path.join(dir, filename)
+  const stat = fs.statSync(full)
+  const parsed = path.parse(filename)
+  const relStem = boxId ? `${boxId}/${parsed.name}` : parsed.name
+
+  return {
+    relStem,
+    boxId,
+    side,
+    stem: parsed.name,
+    ext: parsed.ext.toLowerCase(),
+    full,
+    mtime: Math.floor(stat.mtimeMs),
+    size: stat.size,
+  }
+}
+
+function parseBoxMeta(dir: string, boxId: string): BoxMeta {
+  const indexPath = path.join(dir, '0.index.json')
+  let name = boxId
+  let artists: Record<string, unknown> = {}
+
+  if (fs.existsSync(indexPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
+        name?: string
+        artists?: Record<string, unknown>
+      }
+      if (typeof parsed.name === 'string' && parsed.name.trim()) {
+        name = parsed.name.trim()
+      }
+      if (parsed.artists && typeof parsed.artists === 'object') {
+        artists = parsed.artists
+      }
+    } catch (error) {
+      console.warn(`⚠️  Failed parsing box index: ${indexPath}`, error)
+    }
+  }
+
+  const coverFront = fs.existsSync(path.join(dir, '0.front.jpg')) ? `${boxId}/0.front.jpg` : null
+  const coverBack = fs.existsSync(path.join(dir, '0.back.jpg')) ? `${boxId}/0.back.jpg` : null
+
+  return { id: boxId, name, artists, coverFront, coverBack }
+}
+
+function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: Map<string, BoxMeta> } {
+  const groups = new Map<string, GroupEntry>()
+  const boxes = new Map<string, BoxMeta>()
+  const entries = fs.readdirSync(root, { withFileTypes: true })
+
+  const pushEntry = (entry: FileEntry, filename: string) => {
+    if (!groups.has(entry.relStem)) groups.set(entry.relStem, {})
+    const group = groups.get(entry.relStem)!
 
     if (isAudioFile(filename)) group.audio = entry
     else if (isImageFile(filename)) group.image = entry
   }
 
-  return groups
+  for (const entry of entries) {
+    if (entry.isFile()) {
+      const filename = entry.name
+      if (!isAudioFile(filename) && !isImageFile(filename)) continue
+
+      const diskEntry = getEntry(root, filename, null, null)
+      pushEntry(diskEntry, filename)
+      continue
+    }
+
+    if (!entry.isDirectory()) continue
+
+    const boxId = entry.name
+    const boxDir = path.join(root, boxId)
+    const sideMatch = boxId.match(/[AB]$/i)
+    const side = (sideMatch ? sideMatch[0].toUpperCase() : null) as 'A' | 'B' | null
+
+    boxes.set(boxId, parseBoxMeta(boxDir, boxId))
+
+    const boxFiles = fs.readdirSync(boxDir, { withFileTypes: true })
+    for (const file of boxFiles) {
+      if (!file.isFile()) continue
+      if (file.name === '0.index.json') continue
+      if (!isAudioFile(file.name) && !isImageFile(file.name)) continue
+
+      const diskEntry = getEntry(boxDir, file.name, boxId, side)
+      pushEntry(diskEntry, file.name)
+    }
+  }
+
+  return { groups, boxes }
 }
 
 export async function scanCard(): Promise<{ added: number; updated: number; removed: number }> {
   console.log(`🔍  Scanning ${CARD_DIR}`)
 
   const storedMtimes = await getAllStoredMtimes()
-  const diskGroups   = groupByEsid(CARD_DIR)
+  const { groups: diskGroups, boxes } = discoverDisk(CARD_DIR)
 
   let added = 0, updated = 0, removed = 0
-
-  // ── Collect all stems present on disk ───────────────────────────────────
-  const diskStems = new Set(diskGroups.keys())
+  const diskEsids = new Set<string>()
+  const boxCardMap = new Map<string, Array<{ cardEsid: string; position: number; side: 'A' | 'B' | null }>>()
 
   // ── Upsert card found on disk ────────────────────────────────────────────
-  for (const [stem, { audio, image }] of diskGroups) {
+  for (const [, { audio, image }] of diskGroups) {
     // A normal card MUST have an audio file — skip image-only entries
     if (!audio) continue
 
+    // Only scan canonical cards named like YYYYMMDDHH__artist__title.ext
+    if (!/^\d{10}__/.test(audio.stem)) continue
+
     const parsed = parseCardFilename(audio.stem + audio.ext)
-    if (!parsed) {
-      console.warn(`⚠️  Could not parse filename: ${audio.stem}${audio.ext}`)
-      continue
+    if (!parsed) continue
+
+    const esid = audio.boxId ? hash(`${audio.boxId}:${audio.relStem}`) : createEsid(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.artist, parsed.title)
+    diskEsids.add(esid)
+
+    if (audio.boxId) {
+      if (!boxCardMap.has(audio.boxId)) boxCardMap.set(audio.boxId, [])
+      boxCardMap.get(audio.boxId)!.push({
+        cardEsid: esid,
+        position: parsed.month,
+        side: audio.side,
+      })
     }
 
-    const storedMtime = storedMtimes.get(stem)
+    const storedMtime = storedMtimes.get(esid)
     const isNew       = storedMtime === undefined
     const isChanged   = !isNew && storedMtime !== audio.mtime
 
     // Skip files that haven't changed
     if (!isNew && !isChanged) {
-      storedMtimes.delete(stem)   // mark as still present
+      storedMtimes.delete(esid)   // mark as still present
       continue
     }
 
     const date = new Date(parsed.year, parsed.month - 1, parsed.day, parsed.hour)
     const { suit, rank } = getCardFromDate(date)
 
-    // Generate unique esid and slug
-    const esid = createEsid(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.artist, parsed.title)
     let slug = slugify(`${parsed.artist} ${parsed.title}`)
-    
+
     // Handle potential slug conflicts by checking if it exists
     let slugSuffix = 1
     let originalSlug = slug
@@ -129,18 +213,13 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
       blurhash = generated || null
     }
 
-    // Build paths relative to CARD_DIR so the frontend can resolve them
-    const fullPath = (entry: FileEntry) =>
-      `files/card${entry.full.slice(CARD_DIR.length)}`
-
-    // Function to extract file extension without leading dot
     const getFileExtension = (filePath: string): string => {
-      return path.extname(filePath).slice(1).toLowerCase(); // Removes the leading '.'
-    };
+      return path.extname(filePath).slice(1).toLowerCase()
+    }
 
     await upsertCard({
       esid,
-      stem: audio.stem,  // Add the stem here
+      stem: audio.relStem,
       year: parsed.year,
       month: parsed.month,
       day: parsed.day,
@@ -158,25 +237,33 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
       created_at: date,
     })
 
-    storedMtimes.delete(stem)   // mark as still present
+    storedMtimes.delete(esid)   // mark as still present
 
-    if (isNew) { added++;   console.log(`  ➕ ${stem}`) }
-    else        { updated++; console.log(`  ✏️  ${stem}`) }
+    if (isNew) { added++;   console.log(`  ➕ ${audio.relStem}`) }
+    else        { updated++; console.log(`  ✏️  ${audio.relStem}`) }
   }
 
   // ── Remove card no longer on disk ────────────────────────────────────────
-  for (const [stem] of storedMtimes) {
-    // Only remove if stem is truly not on disk
-    if (!diskStems.has(stem)) {
-      // Get the esid for this stem to delete properly
-      const card = await getCardByStem(stem)
-      if (card) {
-        await deleteCardByEsid(card.esid)
-        removed++
-        console.log(`  ➖ ${stem}`)
-      }
-    }
+  for (const [esid] of storedMtimes) {
+    if (diskEsids.has(esid)) continue
+    await deleteCardByEsid(esid)
+    removed++
+    console.log(`  ➖ ${esid}`)
   }
+
+  const validBoxIds = Array.from(boxes.keys())
+  for (const boxId of validBoxIds) {
+    const meta = boxes.get(boxId)!
+    const cards = (boxCardMap.get(boxId) ?? []).sort((a, b) => {
+      if (a.side !== b.side) return (a.side ?? '').localeCompare(b.side ?? '')
+      return a.position - b.position
+    })
+
+    await upsertBox(meta)
+    await replaceBoxCards(boxId, cards)
+  }
+
+  await removeMissingBoxes(validBoxIds)
 
   console.log(`✅  Scan complete — added: ${added}, updated: ${updated}, removed: ${removed}`)
   return { added, updated, removed }

@@ -48,8 +48,8 @@ export async function getClubsJacks(): Promise<Card[]> {
 }
 
 export async function getAllStoredMtimes(): Promise<Map<string, number>> {
-  const { rows } = await pool.query(`SELECT stem, file_mtime FROM card`)
-  return new Map(rows.map((r: { stem: string; file_mtime: string | number }) => [r.stem, Number(r.file_mtime)]))
+  const { rows } = await pool.query(`SELECT esid, file_mtime FROM card`)
+  return new Map(rows.map((r: { esid: string; file_mtime: string | number }) => [r.esid, Number(r.file_mtime)]))
 }
 
 export async function getCardCount(): Promise<number> {

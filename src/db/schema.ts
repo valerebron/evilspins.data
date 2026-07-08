@@ -24,59 +24,35 @@ export const SCHEMA_SQL = `
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS tape (
-    id          TEXT PRIMARY KEY,
-    duration    INTEGER NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  CREATE TABLE IF NOT EXISTS box (
+    id           TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    artists      JSONB NOT NULL DEFAULT '{}'::jsonb,
+    cover_front  TEXT,
+    cover_back   TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS artist (
-    id          INTEGER PRIMARY KEY,
-    name        TEXT NOT NULL,
-    url         TEXT,
-    cover_id    TEXT,
-    cover_url   TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  CREATE TABLE IF NOT EXISTS box_card (
+    box_id       TEXT NOT NULL REFERENCES box(id) ON DELETE CASCADE,
+    card_esid    TEXT NOT NULL REFERENCES card(esid) ON DELETE CASCADE,
+    position     SMALLINT NOT NULL,
+    side         CHAR(1),
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (box_id, card_esid)
   );
 
-  CREATE TABLE IF NOT EXISTS side (
-    id          SERIAL PRIMARY KEY,
-    tape_id     TEXT NOT NULL REFERENCES tape(id) ON DELETE CASCADE,
-    side        CHAR(1) NOT NULL,
-    duration    INTEGER NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(tape_id, side)
-  );
-
-  CREATE TABLE IF NOT EXISTS tarot (
-    id          SERIAL PRIMARY KEY,
-    esid        TEXT NOT NULL UNIQUE,
-    tape_id     TEXT NOT NULL REFERENCES tape(id) ON DELETE CASCADE,
-    side        CHAR(1) NOT NULL,
-    suit        INTEGER NOT NULL,
-    rank        INTEGER NOT NULL,
-    title       TEXT NOT NULL,
-    artist_id   INTEGER NOT NULL REFERENCES artist(id),
-    start       NUMERIC NOT NULL,
-    link        TEXT,
-    ext_audio   TEXT NOT NULL,
-    ext_image   TEXT,
-    blurhash    TEXT,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(tape_id, side, rank)
-  );
+  ALTER TABLE box_card DROP CONSTRAINT IF EXISTS box_card_box_id_position_side_key;
 
   CREATE INDEX IF NOT EXISTS card_date ON card (year, month, day, hour);
   CREATE INDEX IF NOT EXISTS card_suit_rank ON card (suit, rank);
   CREATE INDEX IF NOT EXISTS card_slug ON card (slug);
   CREATE INDEX IF NOT EXISTS card_stem ON card (stem);
   CREATE INDEX IF NOT EXISTS card_esid ON card (esid);
-  CREATE INDEX IF NOT EXISTS tarot_tape_side_rank ON tarot (tape_id, side, rank);
-  CREATE INDEX IF NOT EXISTS tarot_artist_id ON tarot (artist_id);
+  CREATE INDEX IF NOT EXISTS box_card_box_position ON box_card (box_id, position, side);
+  CREATE INDEX IF NOT EXISTS box_card_card_esid ON box_card (card_esid);
 `
 
 export async function createSchema(): Promise<void> {
