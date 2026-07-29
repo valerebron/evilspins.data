@@ -18,6 +18,14 @@ type BoxCardEntry = {
   side: 'A' | 'B' | null
 }
 
+function normalizeBoxMediaPath(value: string | null | undefined): string | null {
+  const media = (value ?? '').trim()
+  if (!media) return null
+  if (media.startsWith('files/')) return media
+
+  return path.posix.join('files', media)
+}
+
 function withMediaUrls<T extends Card>(card: T): T & { url_audio: string; url_image?: string } {
   const url_audio = path.posix.join('files', `${card.stem}.${card.ext_audio}`)
   const payload: T & { url_audio: string; url_image?: string } = {
@@ -50,8 +58,8 @@ export async function upsertBox(params: {
       params.id,
       params.name,
       JSON.stringify(params.artists ?? {}),
-      params.coverFront ?? null,
-      params.coverBack ?? null,
+      normalizeBoxMediaPath(params.coverFront),
+      normalizeBoxMediaPath(params.coverBack),
     ],
   )
 }
@@ -97,12 +105,24 @@ export async function getAllBoxes(): Promise<Array<BoxRow & { card_count: number
      ORDER BY b.id`,
   )
 
-  return rows.map((row) => ({ ...row, card_count: Number(row.card_count) }))
+  return rows.map((row) => ({
+    ...row,
+    cover_front: normalizeBoxMediaPath(row.cover_front),
+    cover_back: normalizeBoxMediaPath(row.cover_back),
+    card_count: Number(row.card_count),
+  }))
 }
 
 export async function getBoxById(boxId: string): Promise<BoxRow | null> {
   const { rows } = await pool.query<BoxRow>(`SELECT * FROM box WHERE id = $1`, [boxId])
-  return rows[0] ?? null
+  const row = rows[0]
+  if (!row) return null
+
+  return {
+    ...row,
+    cover_front: normalizeBoxMediaPath(row.cover_front),
+    cover_back: normalizeBoxMediaPath(row.cover_back),
+  }
 }
 
 export async function getCardsByBoxId(boxId: string): Promise<Array<Card & { url_audio: string; url_image?: string; box_position: number; box_side: string | null }>> {

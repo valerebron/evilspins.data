@@ -37,6 +37,7 @@ interface BoxMeta {
   artists: Record<string, unknown>
   coverFront: string | null
   coverBack: string | null
+  tracklist: Array<{ id: string; position: number }>
 }
 
 interface GroupEntry {
@@ -67,15 +68,19 @@ function getEntry(dir: string, filename: string, boxId: string | null, side: 'A'
 }
 
 function parseBoxMeta(dir: string, boxId: string): BoxMeta {
-  const indexPath = path.join(dir, '0.index.json')
+  const indexPath = fs.existsSync(path.join(dir, 'index.json'))
+    ? path.join(dir, 'index.json')
+    : path.join(dir, '0.index.json')
   let name = boxId
   let artists: Record<string, unknown> = {}
+  const tracklist: Array<{ id: string; position: number }> = []
 
   if (fs.existsSync(indexPath)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
         name?: string
         artists?: Record<string, unknown>
+        tracklist?: Record<string, { id?: string; artist?: Record<string, unknown> }>
       }
       if (typeof parsed.name === 'string' && parsed.name.trim()) {
         name = parsed.name.trim()
@@ -83,15 +88,36 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
       if (parsed.artists && typeof parsed.artists === 'object') {
         artists = parsed.artists
       }
+
+      if (parsed.tracklist && typeof parsed.tracklist === 'object') {
+        const ordered = Object.entries(parsed.tracklist)
+          .map(([key, value]) => ({
+            position: Number.parseInt(key, 10),
+            id: typeof value?.id === 'string' ? value.id.trim() : '',
+            artist: value?.artist,
+          }))
+          .filter((entry) => Number.isFinite(entry.position) && entry.id.length > 0)
+          .sort((a, b) => a.position - b.position)
+
+        for (const entry of ordered) {
+          tracklist.push({ id: entry.id, position: entry.position })
+          if (!artists[entry.id] && entry.artist && typeof entry.artist === 'object') {
+            artists[entry.id] = entry.artist
+          }
+        }
+      }
     } catch (error) {
       console.warn(`⚠️  Failed parsing box index: ${indexPath}`, error)
     }
   }
 
-  const coverFront = fs.existsSync(path.join(dir, '0.front.jpg')) ? `${boxId}/0.front.jpg` : null
-  const coverBack = fs.existsSync(path.join(dir, '0.back.jpg')) ? `${boxId}/0.back.jpg` : null
+  const frontFilename = fs.existsSync(path.join(dir, 'front.jpg')) ? 'front.jpg' : (fs.existsSync(path.join(dir, '0.front.jpg')) ? '0.front.jpg' : null)
+  const backFilename = fs.existsSync(path.join(dir, 'back.jpg')) ? 'back.jpg' : (fs.existsSync(path.join(dir, '0.back.jpg')) ? '0.back.jpg' : null)
 
-  return { id: boxId, name, artists, coverFront, coverBack }
+  const coverFront = frontFilename ? path.posix.join('files', boxId, frontFilename) : null
+  const coverBack = backFilename ? path.posix.join('files', boxId, backFilename) : null
+
+  return { id: boxId, name, artists, coverFront, coverBack, tracklist }
 }
 
 function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: Map<string, BoxMeta> } {
@@ -129,7 +155,14 @@ function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: M
     const boxFiles = fs.readdirSync(boxDir, { withFileTypes: true })
     for (const file of boxFiles) {
       if (!file.isFile()) continue
-      if (file.name === '0.index.json') continue
+      if (
+        file.name === 'index.json'
+        || file.name === '0.index.json'
+        || file.name === 'front.jpg'
+        || file.name === 'back.jpg'
+        || file.name === '0.front.jpg'
+        || file.name === '0.back.jpg'
+      ) continue
       if (!isAudioFile(file.name) && !isImageFile(file.name)) continue
 
       const diskEntry = getEntry(boxDir, file.name, boxId, side)
@@ -148,6 +181,7 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
 
   let added = 0, updated = 0, removed = 0
   const diskEsids = new Set<string>()
+  const rootStemToEsid = new Map<string, string>()
   const boxCardMap = new Map<string, Array<{ cardEsid: string; position: number; side: 'A' | 'B' | null }>>()
 
   // ── Upsert card found on disk ────────────────────────────────────────────
@@ -163,6 +197,10 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
 
     const esid = audio.boxId ? hash(`${audio.boxId}:${audio.relStem}`) : createEsid(parsed.year, parsed.month, parsed.day, parsed.hour, parsed.artist, parsed.title)
     diskEsids.add(esid)
+
+    if (!audio.boxId) {
+      rootStemToEsid.set(audio.stem, esid)
+    }
 
     if (audio.boxId) {
       if (!boxCardMap.has(audio.boxId)) boxCardMap.set(audio.boxId, [])
@@ -254,7 +292,27 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
   const validBoxIds = Array.from(boxes.keys())
   for (const boxId of validBoxIds) {
     const meta = boxes.get(boxId)!
-    const cards = (boxCardMap.get(boxId) ?? []).sort((a, b) => {
+    const sideMatch = boxId.match(/[AB]$/i)
+    const side = (sideMatch ? sideMatch[0].toUpperCase() : null) as 'A' | 'B' | null
+
+    const cardsFromTracklist = meta.tracklist
+      .map(({ id, position }) => {
+        const mappedEsid = rootStemToEsid.get(id)
+        if (!mappedEsid) {
+          console.warn(`⚠️  Box ${boxId}: tracklist card not found on disk: ${id}`)
+          return null
+        }
+
+        return {
+          cardEsid: mappedEsid,
+          position,
+          side,
+        }
+      })
+      .filter((entry): entry is { cardEsid: string; position: number; side: 'A' | 'B' | null } => entry !== null)
+
+    const legacyCards = boxCardMap.get(boxId) ?? []
+    const cards = (cardsFromTracklist.length > 0 ? cardsFromTracklist : legacyCards).sort((a, b) => {
       if (a.side !== b.side) return (a.side ?? '').localeCompare(b.side ?? '')
       return a.position - b.position
     })
