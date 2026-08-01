@@ -35,6 +35,7 @@ interface BoxMeta {
   id: string
   name: string
   artists: Record<string, unknown>
+  color: Record<string, string>
   coverFront: string | null
   coverBack: string | null
   tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>
@@ -73,6 +74,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
     : path.join(dir, '0.index.json')
   let name = boxId
   let artists: Record<string, unknown> = {}
+  let color: Record<string, string> = {}
   const tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }> = []
 
   if (fs.existsSync(indexPath)) {
@@ -80,6 +82,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
       const parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
         name?: string
         artists?: Record<string, unknown>
+        color?: Record<string, unknown>
         tracklist?: Record<string, unknown>
       }
       if (typeof parsed.name === 'string' && parsed.name.trim()) {
@@ -87,6 +90,13 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
       }
       if (parsed.artists && typeof parsed.artists === 'object') {
         artists = parsed.artists
+      }
+      if (parsed.color && typeof parsed.color === 'object') {
+        color = Object.fromEntries(
+          Object.entries(parsed.color)
+            .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
+            .map(([side, value]) => [side.toUpperCase(), value.trim()]),
+        )
       }
 
       if (parsed.tracklist && typeof parsed.tracklist === 'object') {
@@ -174,7 +184,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
   const coverFront = frontFilename ? path.posix.join('files', boxId, frontFilename) : null
   const coverBack = backFilename ? path.posix.join('files', boxId, backFilename) : null
 
-  return { id: boxId, name, artists, coverFront, coverBack, tracklist }
+  return { id: boxId, name, artists, color, coverFront, coverBack, tracklist }
 }
 
 function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: Map<string, BoxMeta> } {

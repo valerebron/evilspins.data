@@ -6,6 +6,7 @@ type BoxRow = {
   id: string
   name: string
   artists: Record<string, unknown>
+  color: Record<string, string>
   cover_front: string | null
   cover_back: string | null
   created_at: Date
@@ -42,15 +43,17 @@ export async function upsertBox(params: {
   id: string
   name: string
   artists: Record<string, unknown>
+  color?: Record<string, string>
   coverFront?: string | null
   coverBack?: string | null
 }): Promise<void> {
   await pool.query(
-    `INSERT INTO box (id, name, artists, cover_front, cover_back)
-     VALUES ($1, $2, $3::jsonb, $4, $5)
+    `INSERT INTO box (id, name, artists, color, cover_front, cover_back)
+     VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, $6)
      ON CONFLICT (id) DO UPDATE SET
        name = EXCLUDED.name,
        artists = EXCLUDED.artists,
+       color = EXCLUDED.color,
        cover_front = EXCLUDED.cover_front,
        cover_back = EXCLUDED.cover_back,
        updated_at = now()`,
@@ -58,6 +61,7 @@ export async function upsertBox(params: {
       params.id,
       params.name,
       JSON.stringify(params.artists ?? {}),
+      JSON.stringify(params.color ?? {}),
       normalizeBoxMediaPath(params.coverFront),
       normalizeBoxMediaPath(params.coverBack),
     ],
@@ -107,6 +111,7 @@ export async function getAllBoxes(): Promise<Array<BoxRow & { card_count: number
 
   return rows.map((row) => ({
     ...row,
+    color: row.color ?? {},
     cover_front: normalizeBoxMediaPath(row.cover_front),
     cover_back: normalizeBoxMediaPath(row.cover_back),
     card_count: Number(row.card_count),
@@ -120,6 +125,7 @@ export async function getBoxById(boxId: string): Promise<BoxRow | null> {
 
   return {
     ...row,
+    color: row.color ?? {},
     cover_front: normalizeBoxMediaPath(row.cover_front),
     cover_back: normalizeBoxMediaPath(row.cover_back),
   }
