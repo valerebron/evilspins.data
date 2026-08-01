@@ -37,7 +37,7 @@ interface BoxMeta {
   artists: Record<string, unknown>
   coverFront: string | null
   coverBack: string | null
-  tracklist: Array<{ id: string; position: number }>
+  tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>
 }
 
 interface GroupEntry {
@@ -73,14 +73,14 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
     : path.join(dir, '0.index.json')
   let name = boxId
   let artists: Record<string, unknown> = {}
-  const tracklist: Array<{ id: string; position: number }> = []
+  const tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }> = []
 
   if (fs.existsSync(indexPath)) {
     try {
       const parsed = JSON.parse(fs.readFileSync(indexPath, 'utf8')) as {
         name?: string
         artists?: Record<string, unknown>
-        tracklist?: Record<string, { id?: string; artist?: Record<string, unknown> }>
+        tracklist?: Record<string, unknown>
       }
       if (typeof parsed.name === 'string' && parsed.name.trim()) {
         name = parsed.name.trim()
@@ -90,19 +90,53 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
       }
 
       if (parsed.tracklist && typeof parsed.tracklist === 'object') {
-        const ordered = Object.entries(parsed.tracklist)
-          .map(([key, value]) => ({
-            position: Number.parseInt(key, 10),
-            id: typeof value?.id === 'string' ? value.id.trim() : '',
-            artist: value?.artist,
-          }))
-          .filter((entry) => Number.isFinite(entry.position) && entry.id.length > 0)
-          .sort((a, b) => a.position - b.position)
+        const tracklistObject = parsed.tracklist as Record<string, unknown>
+        const hasSides = typeof tracklistObject.A === 'object' || typeof tracklistObject.B === 'object'
 
-        for (const entry of ordered) {
-          tracklist.push({ id: entry.id, position: entry.position })
-          if (!artists[entry.id] && entry.artist && typeof entry.artist === 'object') {
-            artists[entry.id] = entry.artist
+        if (hasSides) {
+          const sides: Array<'A' | 'B'> = ['A', 'B']
+          for (const side of sides) {
+            const sideEntries = tracklistObject[side]
+            if (!sideEntries || typeof sideEntries !== 'object') continue
+
+            const ordered = Object.entries(sideEntries as Record<string, unknown>)
+              .map(([key, value]) => {
+                const record = (value && typeof value === 'object') ? value as Record<string, unknown> : {}
+                return {
+                  position: Number.parseInt(key, 10),
+                  id: typeof record.id === 'string' ? record.id.trim() : '',
+                  artist: record.artist,
+                  side,
+                }
+              })
+              .filter((entry) => Number.isFinite(entry.position) && entry.id.length > 0)
+              .sort((a, b) => a.position - b.position)
+
+            for (const entry of ordered) {
+              tracklist.push({ id: entry.id, position: entry.position, side: entry.side })
+              if (!artists[entry.id] && entry.artist && typeof entry.artist === 'object') {
+                artists[entry.id] = entry.artist as Record<string, unknown>
+              }
+            }
+          }
+        } else {
+          const ordered = Object.entries(tracklistObject)
+            .map(([key, value]) => {
+              const record = (value && typeof value === 'object') ? value as Record<string, unknown> : {}
+              return {
+                position: Number.parseInt(key, 10),
+                id: typeof record.id === 'string' ? record.id.trim() : '',
+                artist: record.artist,
+              }
+            })
+            .filter((entry) => Number.isFinite(entry.position) && entry.id.length > 0)
+            .sort((a, b) => a.position - b.position)
+
+          for (const entry of ordered) {
+            tracklist.push({ id: entry.id, position: entry.position, side: null })
+            if (!artists[entry.id] && entry.artist && typeof entry.artist === 'object') {
+              artists[entry.id] = entry.artist as Record<string, unknown>
+            }
           }
         }
       }
@@ -111,8 +145,31 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
     }
   }
 
-  const frontFilename = fs.existsSync(path.join(dir, 'front.jpg')) ? 'front.jpg' : (fs.existsSync(path.join(dir, '0.front.jpg')) ? '0.front.jpg' : null)
-  const backFilename = fs.existsSync(path.join(dir, 'back.jpg')) ? 'back.jpg' : (fs.existsSync(path.join(dir, '0.back.jpg')) ? '0.back.jpg' : null)
+  const findFirstExisting = (filenames: string[]): string | null => {
+    for (const filename of filenames) {
+      if (fs.existsSync(path.join(dir, filename))) {
+        return filename
+      }
+    }
+    return null
+  }
+
+  const frontFilename = findFirstExisting([
+    'front-a.jpg',
+    'front-a.jpeg',
+    'front.jpg',
+    'front.jpeg',
+    '0.front.jpg',
+    '0.front.jpeg',
+  ])
+  const backFilename = findFirstExisting([
+    'back-a.jpg',
+    'back-a.jpeg',
+    'back.jpg',
+    'back.jpeg',
+    '0.back.jpg',
+    '0.back.jpeg',
+  ])
 
   const coverFront = frontFilename ? path.posix.join('files', boxId, frontFilename) : null
   const coverBack = backFilename ? path.posix.join('files', boxId, backFilename) : null
@@ -158,10 +215,22 @@ function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: M
       if (
         file.name === 'index.json'
         || file.name === '0.index.json'
+        || file.name === 'front-a.jpg'
+        || file.name === 'front-a.jpeg'
+        || file.name === 'back-a.jpg'
+        || file.name === 'back-a.jpeg'
+        || file.name === 'front-b.jpg'
+        || file.name === 'front-b.jpeg'
+        || file.name === 'back-b.jpg'
+        || file.name === 'back-b.jpeg'
         || file.name === 'front.jpg'
+        || file.name === 'front.jpeg'
         || file.name === 'back.jpg'
+        || file.name === 'back.jpeg'
         || file.name === '0.front.jpg'
+        || file.name === '0.front.jpeg'
         || file.name === '0.back.jpg'
+        || file.name === '0.back.jpeg'
       ) continue
       if (!isAudioFile(file.name) && !isImageFile(file.name)) continue
 
@@ -292,11 +361,9 @@ export async function scanCard(): Promise<{ added: number; updated: number; remo
   const validBoxIds = Array.from(boxes.keys())
   for (const boxId of validBoxIds) {
     const meta = boxes.get(boxId)!
-    const sideMatch = boxId.match(/[AB]$/i)
-    const side = (sideMatch ? sideMatch[0].toUpperCase() : null) as 'A' | 'B' | null
 
     const cardsFromTracklist = meta.tracklist
-      .map(({ id, position }) => {
+      .map(({ id, position, side }) => {
         const mappedEsid = rootStemToEsid.get(id)
         if (!mappedEsid) {
           console.warn(`⚠️  Box ${boxId}: tracklist card not found on disk: ${id}`)
