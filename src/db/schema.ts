@@ -29,6 +29,7 @@ export const SCHEMA_SQL = `
     name         TEXT NOT NULL,
     artists      JSONB NOT NULL DEFAULT '{}'::jsonb,
     color        JSONB NOT NULL DEFAULT '{}'::jsonb,
+    quote        JSONB NOT NULL DEFAULT '{}'::jsonb,
     cover_front  TEXT,
     cover_back   TEXT,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -36,6 +37,7 @@ export const SCHEMA_SQL = `
   );
 
   ALTER TABLE box ADD COLUMN IF NOT EXISTS color JSONB NOT NULL DEFAULT '{}'::jsonb;
+  ALTER TABLE box ADD COLUMN IF NOT EXISTS quote JSONB NOT NULL DEFAULT '{}'::jsonb;
 
   CREATE TABLE IF NOT EXISTS box_card (
     box_id       TEXT NOT NULL REFERENCES box(id) ON DELETE CASCADE,

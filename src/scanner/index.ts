@@ -36,6 +36,7 @@ interface BoxMeta {
   name: string
   artists: Record<string, unknown>
   color: Record<string, string>
+  quote: Record<string, Record<string, string>>
   coverFront: string | null
   coverBack: string | null
   tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>
@@ -75,6 +76,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
   let name = boxId
   let artists: Record<string, unknown> = {}
   let color: Record<string, string> = {}
+  let quote: Record<string, Record<string, string>> = {}
   const tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }> = []
 
   if (fs.existsSync(indexPath)) {
@@ -83,6 +85,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
         name?: string
         artists?: Record<string, unknown>
         color?: Record<string, unknown>
+        quote?: Record<string, unknown>
         tracklist?: Record<string, unknown>
       }
       if (typeof parsed.name === 'string' && parsed.name.trim()) {
@@ -96,6 +99,20 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
           Object.entries(parsed.color)
             .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
             .map(([side, value]) => [side.toUpperCase(), value.trim()]),
+        )
+      }
+      if (parsed.quote && typeof parsed.quote === 'object') {
+        quote = Object.fromEntries(
+          Object.entries(parsed.quote)
+            .filter((entry): entry is [string, Record<string, unknown>] => Boolean(entry[1]) && typeof entry[1] === 'object')
+            .map(([side, value]) => [
+              side.toUpperCase(),
+              Object.fromEntries(
+                Object.entries(value)
+                  .filter((quoteEntry): quoteEntry is [string, string] => typeof quoteEntry[1] === 'string' && quoteEntry[1].trim().length > 0)
+                  .map(([key, text]) => [key, text.trim()]),
+              ),
+            ]),
         )
       }
 
@@ -184,7 +201,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
   const coverFront = frontFilename ? path.posix.join('files', boxId, frontFilename) : null
   const coverBack = backFilename ? path.posix.join('files', boxId, backFilename) : null
 
-  return { id: boxId, name, artists, color, coverFront, coverBack, tracklist }
+  return { id: boxId, name, artists, color, quote, coverFront, coverBack, tracklist }
 }
 
 function discoverDisk(root: string): { groups: Map<string, GroupEntry>; boxes: Map<string, BoxMeta> } {
