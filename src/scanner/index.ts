@@ -36,10 +36,15 @@ interface BoxMeta {
   name: string
   artists: Record<string, unknown>
   color: Record<string, string>
-  quote: Record<string, Record<string, string>>
+  quote: Record<string, Record<string, string | QuoteArtistRef>>
   coverFront: string | null
   coverBack: string | null
   tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>
+}
+
+type QuoteArtistRef = {
+  name: string
+  url?: string
 }
 
 interface GroupEntry {
@@ -49,6 +54,111 @@ interface GroupEntry {
 
 function hash(input: string): string {
   return createHash('md5').update(input).digest('hex')
+}
+
+function normalizeArtistRef(value: unknown): QuoteArtistRef | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  const name = typeof record.name === 'string' ? record.name.trim() : ''
+  if (!name) {
+    return null
+  }
+
+  const url = typeof record.url === 'string' && record.url.trim().length > 0
+    ? record.url.trim()
+    : undefined
+
+  return url ? { name, url } : { name }
+}
+
+function normalizeQuoteEntry(key: string, value: unknown): [string, string | QuoteArtistRef] | null {
+  if ((key === 'author' || key === 'auhor')) {
+    const artistRef = normalizeArtistRef(value)
+    if (artistRef) {
+      return [key, artistRef]
+    }
+  }
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return [key, value.trim()]
+  }
+
+  if ((key === 'author' || key === 'auhor') && typeof value === 'number' && Number.isFinite(value)) {
+    return [key, String(value)]
+  }
+
+  return null
+}
+
+function findTrackIdByPosition(
+  sideKey: string,
+  position: number,
+  tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>,
+): string | null {
+  const normalizedSide = sideKey.toUpperCase()
+
+  const exactSide = tracklist.find((entry) => entry.position === position && entry.side === normalizedSide)
+  if (exactSide) {
+    return exactSide.id
+  }
+
+  const noSide = tracklist.find((entry) => entry.position === position && entry.side === null)
+  if (noSide) {
+    return noSide.id
+  }
+
+  const anySide = tracklist.find((entry) => entry.position === position)
+  return anySide?.id ?? null
+}
+
+function resolveQuoteArtistRef(
+  sideKey: string,
+  rawValue: string,
+  tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>,
+  artists: Record<string, unknown>,
+): QuoteArtistRef | null {
+  const normalizedValue = rawValue.trim()
+  if (!normalizedValue) {
+    return null
+  }
+
+  const position = Number.parseInt(normalizedValue, 10)
+  if (Number.isFinite(position)) {
+    const trackId = findTrackIdByPosition(sideKey, position, tracklist)
+    if (trackId) {
+      const artistByPosition = normalizeArtistRef(artists[trackId])
+      if (artistByPosition) {
+        return artistByPosition
+      }
+    }
+  }
+
+  return normalizeArtistRef(artists[normalizedValue])
+}
+
+function enrichQuoteAuthors(
+  quote: Record<string, Record<string, string | QuoteArtistRef>>,
+  tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }>,
+  artists: Record<string, unknown>,
+): Record<string, Record<string, string | QuoteArtistRef>> {
+  for (const [sideKey, sideQuote] of Object.entries(quote)) {
+    for (const key of ['author', 'auhor']) {
+      const currentValue = sideQuote[key]
+      if (typeof currentValue !== 'string') {
+        continue
+      }
+
+      const resolved = resolveQuoteArtistRef(sideKey, currentValue, tracklist, artists)
+      if (resolved) {
+        sideQuote[key] = resolved
+      }
+    }
+  }
+
+  return quote
 }
 
 function getEntry(dir: string, filename: string, boxId: string | null, side: 'A' | 'B' | null): FileEntry {
@@ -76,7 +186,7 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
   let name = boxId
   let artists: Record<string, unknown> = {}
   let color: Record<string, string> = {}
-  let quote: Record<string, Record<string, string>> = {}
+  let quote: Record<string, Record<string, string | QuoteArtistRef>> = {}
   const tracklist: Array<{ id: string; position: number; side: 'A' | 'B' | null }> = []
 
   if (fs.existsSync(indexPath)) {
@@ -109,8 +219,8 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
               side.toUpperCase(),
               Object.fromEntries(
                 Object.entries(value)
-                  .filter((quoteEntry): quoteEntry is [string, string] => typeof quoteEntry[1] === 'string' && quoteEntry[1].trim().length > 0)
-                  .map(([key, text]) => [key, text.trim()]),
+                  .map(([key, quoteValue]) => normalizeQuoteEntry(key, quoteValue))
+                  .filter((quoteEntry): quoteEntry is [string, string | QuoteArtistRef] => Boolean(quoteEntry)),
               ),
             ]),
         )
@@ -167,6 +277,8 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
           }
         }
       }
+
+      quote = enrichQuoteAuthors(quote, tracklist, artists)
     } catch (error) {
       console.warn(`⚠️  Failed parsing box index: ${indexPath}`, error)
     }
