@@ -17,6 +17,46 @@ import {
 } from '../db/card'
 import { removeMissingBoxes, replaceBoxCards, upsertBox } from '../db/box'
 
+// Function to normalize filenames for playlist boxes
+function normalizeFilename(stem: string): string {
+  // Si le stem est déjà au bon format (10 chiffres suivis de __), on le retourne tel quel
+  if (/^\d{10}__/.test(stem)) {
+    return stem
+  }
+
+  // Sinon, on essaie de créer un format standard avec une date fictive
+  // Pour les playlists, on utilise une date fixe et on normalise les noms d'artistes/titres
+  
+  // Exemple : "some_artist_-_some_title" → "2000010100__some artist__some title"
+  
+  // Extraire les parties de l'ancien nom
+  const parts = stem.split(/[-_]+/)
+  
+  // Utiliser une date fixe pour les playlists (2000-01-01 00:00)
+  const year = 2000
+  const month = 1
+  const day = 1
+  const hour = 0
+  
+  // Formater la date comme attendu
+  const datePart = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}${hour.toString().padStart(2, '0')}`
+  
+  // Nettoyer les parties pour les noms d'artistes/titres
+  const cleanParts = parts.map(part => part.trim())
+    .filter(part => part.length > 0)
+  
+  if (cleanParts.length < 2) {
+    // Si pas assez de parties, on utilise le nom complet comme titre
+    return `${datePart}__unknown__${cleanParts.join(' ')}`
+  }
+  
+  // Utiliser les deux premières parties comme artiste et titre
+  const artist = cleanParts[0].replace(/\s+/g, ' ')
+  const title = cleanParts.slice(1).join(' ').replace(/\s+/g, ' ')
+  
+  return `${datePart}__${artist}__${title}`
+}
+
 const MEDIA_DIR = process.env.MEDIA_DIR ?? '/var/cards'
 const CARD_DIR = MEDIA_DIR
 
@@ -282,6 +322,44 @@ function parseBoxMeta(dir: string, boxId: string): BoxMeta {
     } catch (error) {
       console.warn(`⚠️  Failed parsing box index: ${indexPath}`, error)
     }
+  } else {
+    // Si pas de fichier index.json, on crée une playlist simple
+    // On récupère tous les fichiers audio du dossier et on les trie par nom
+    const files = fs.readdirSync(dir)
+    const audioFiles = files.filter(file => isAudioFile(file))
+    
+    // Trier les fichiers audio par ordre alphabétique
+    audioFiles.sort()
+    
+    // Créer la tracklist avec les fichiers trouvés
+    const tracklistItems = audioFiles.map((file, index) => {
+      const stem = path.parse(file).name
+      // Normaliser le nom du fichier pour correspondre au format attendu (YYYYMMDDHH__artist__title)
+      const normalizedStem = normalizeFilename(stem)
+      return { id: normalizedStem, position: index, side: null }
+    })
+    
+    // Générer un index.json basique si nécessaire
+    try {
+      const basicIndex = {
+        name: boxId,
+        color: {},
+        quote: {},
+        tracklist: {
+          A: tracklistItems.reduce((acc, item, index) => {
+            acc[index] = { id: item.id }
+            return acc
+          }, {} as Record<string, { id: string }>)
+        }
+      }
+      
+      fs.writeFileSync(indexPath, JSON.stringify(basicIndex, null, 2))
+      console.log(`📝 Generated basic index.json for box ${boxId}`)
+    } catch (error) {
+      console.warn(`⚠️  Failed to generate basic index.json for box ${boxId}:`, error)
+    }
+    
+    tracklist.push(...tracklistItems)
   }
 
   const findFirstExisting = (filenames: string[]): string | null => {
